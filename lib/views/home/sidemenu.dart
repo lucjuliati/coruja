@@ -154,7 +154,10 @@ class _SideMenuState extends State<SideMenu> {
                       alignment: Alignment.bottomRight,
                       child: FilledButton(
                         onPressed: selectedProject != null
-                            ? () => widget.controller.createRequest(name: name.text, project: selectedProject!)
+                            ? () {
+                                widget.controller.createRequest(name: name.text, project: selectedProject!);
+                                Navigator.of(context).pop();
+                              }
                             : null,
                         child: Text('Create'),
                       ),
@@ -178,8 +181,8 @@ class _SideMenuState extends State<SideMenu> {
         PopupMenuItem(value: 'delete', child: Text('Delete')),
       ],
     ).then((value) {
-      if (value != null) {
-        print('Selected: $value');
+      if (value == 'delete') {
+        widget.controller.deleteRequest(request);
       }
     });
   }
@@ -250,14 +253,19 @@ class _SideMenuState extends State<SideMenu> {
                             Request request = projectData.requests[index];
 
                             return Container(
-                              margin: const EdgeInsets.symmetric(vertical: 12),
+                              decoration: BoxDecoration(
+                                color: request.id == widget.controller.selectedRequest?.id ? theme.primaryColor : Colors.transparent,
+                                border: Border(
+                                  bottom: BorderSide(color: theme.dividerColor),
+                                ),
+                              ),
                               child: InkWell(
                                 onSecondaryTapUp: (details) {
                                   _showPopupMenu(request, details.globalPosition);
                                 },
                                 onTap: () => widget.controller.select(request),
                                 child: Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [

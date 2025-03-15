@@ -43,11 +43,22 @@ class RequestController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> createRequest({String? name, required int project}) async {
+  Future<void> deleteRequest(Request request) async {
+    await (db.delete(db.requests)..where((req) => req.id.equals(request.id))).go();
+
+    if (request.id == selectedRequest?.id) {
+      selectedRequest = null;
+      notifyListeners();
+    }
+
+    getRequests(request.project!);
+  }
+
+  Future<void> createRequest({String? name, String? method, required int project}) async {
     try {
       await db.into(db.requests).insert(
             RequestsCompanion.insert(
-              name: 'New request',
+              name: name ?? 'New Request',
               method: Value('get'),
               project: Value(project),
             ),

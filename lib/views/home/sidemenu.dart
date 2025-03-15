@@ -14,6 +14,13 @@ class SideMenu extends StatefulWidget {
 }
 
 class _SideMenuState extends State<SideMenu> {
+  final methodColor = <String, Color>{
+    'GET': Color(0xFF59B156),
+    'POST': Colors.orange,
+    'PATCH': Colors.blue,
+    'DELETE': Color(0xFFE45656),
+  };
+
   @override
   void initState() {
     super.initState();
@@ -51,11 +58,11 @@ class _SideMenuState extends State<SideMenu> {
               spacing: 20,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                makeButton("Project", Color(0xFFF1B127).withValues(alpha: 0.8), Icons.folder, () {
-                  widget.controller.createResource("project", true);
+                makeButton('Project', Color(0xFFF1B127).withValues(alpha: 0.8), Icons.folder, () {
+                  widget.controller.createProject();
                   Navigator.of(context).pop();
                 }),
-                makeButton("Request", const Color(0xFF5A72DC), Icons.http, () {
+                makeButton('Request', const Color(0xFF5A72DC), Icons.http, () {
                   Navigator.pop(context);
                   Future.delayed(Duration(milliseconds: 200), newRequestDialog);
                 }),
@@ -68,7 +75,9 @@ class _SideMenuState extends State<SideMenu> {
   }
 
   void newRequestDialog() {
-    var selectedProject;
+    ThemeData theme = Theme.of(context);
+    var name = TextEditingController();
+    int? selectedProject;
 
     showDialog(
       context: context,
@@ -90,33 +99,64 @@ class _SideMenuState extends State<SideMenu> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "New Request",
+                      'New Request',
                       style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
                     ),
                     const SizedBox(height: 15),
-                    const Label(text: "Request name"),
-                    TextField(decoration: InputDecoration(), style: TextStyle(fontSize: 14)),
+                    const Label(text: 'Request name'),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(6),
+                      child: TextField(
+                        controller: name,
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: theme.inputDecorationTheme.fillColor,
+                          border: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: BorderSide(color: Colors.transparent),
+                          ),
+                        ),
+                        style: TextStyle(fontSize: 14),
+                      ),
+                    ),
                     const SizedBox(height: 8),
-                    const Label(text: "Project"),
+                    const Label(text: 'Project'),
                     SizedBox(
                       width: MediaQuery.of(context).size.width,
-                      child: DropdownButton(
-                        onChanged:
-                            (value) => setState(() {
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: Material(
+                          color: theme.inputDecorationTheme.fillColor,
+                          child: DropdownButton(
+                            onChanged: (value) => setState(() {
                               selectedProject = value;
                             }),
-                        value: selectedProject,
-                        icon: const Icon(Icons.arrow_drop_down),
-                        isExpanded: true,
-                        items: menuItems,
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            underline: Container(
+                              decoration: BoxDecoration(
+                                border: Border(
+                                  bottom: BorderSide(color: theme.dividerColor),
+                                ),
+                              ),
+                            ),
+                            style: TextStyle(fontSize: 14),
+                            value: selectedProject,
+                            icon: const Icon(Icons.arrow_drop_down),
+                            isExpanded: true,
+                            items: menuItems,
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 40),
                     Align(
                       alignment: Alignment.bottomRight,
                       child: FilledButton(
-                        onPressed: selectedProject != null ? () {} : null,
-                        child: Text("Create"),
+                        onPressed: selectedProject != null
+                            ? () => widget.controller.createRequest(name: name.text, project: selectedProject!)
+                            : null,
+                        child: Text('Create'),
                       ),
                     ),
                   ],
@@ -150,90 +190,101 @@ class _SideMenuState extends State<SideMenu> {
 
     return ListenableBuilder(
       listenable: widget.controller,
-      builder:
-          (context, child) => Container(
-            color: theme.cardColor,
-            width: 260,
-            child: Material(
-              color: Colors.transparent,
-              child: CustomScrollView(
-                slivers: [
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 12, left: 12, right: 12),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            "My projects",
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                          ),
-                          FilledButton(
-                            onPressed: newResourceDialog,
-                            child: Row(spacing: 6, children: [Icon(Icons.add), Text("New")]),
-                          ),
-                        ],
+      builder: (context, child) => Container(
+        color: theme.cardColor,
+        width: 260,
+        child: Material(
+          color: Colors.transparent,
+          child: CustomScrollView(
+            slivers: [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 12, left: 12, right: 12),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'My projects',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                       ),
-                    ),
+                      FilledButton(
+                        onPressed: newResourceDialog,
+                        child: Row(spacing: 6, children: [Icon(Icons.add), Text('New')]),
+                      ),
+                    ],
                   ),
-                  SliverToBoxAdapter(child: const SizedBox(height: 12)),
-                  SliverToBoxAdapter(
-                    child: ExpansionPanelList(
-                      expandedHeaderPadding: const EdgeInsets.all(0),
-                      expansionCallback: (index, isExpanded) {
-                        widget.controller.setProjectExpandedIndex(index);
-                      },
-                      children:
-                          widget.controller.projects.map<ExpansionPanel>((project) {
-                            bool isExpanded = widget.controller.projectData[project.id]!.isExpanded;
-
-                            return ExpansionPanel(
-                              canTapOnHeader: true,
-                              isExpanded: isExpanded,
-                              headerBuilder: (context, isExpanded) {
-                                return ListTile(
-                                  onTap: () => widget.controller.setProjectExpanded(project.id),
-                                  title: Opacity(
-                                    opacity: 0.85,
-                                    child: Text(project.name, style: TextStyle(fontSize: 14)),
-                                  ),
-                                );
-                              },
-                              body: Column(children: [Text("bordy")]),
-                            );
-                          }).toList(),
-                    ),
-                  ),
-
-                  // SliverList.builder(
-                  //   itemCount: widget.controller.requests.length,
-                  //   itemBuilder: (context, index) {
-                  //     var request = widget.controller.requests[index];
-                  //     return Container(
-                  //       margin: const EdgeInsets.symmetric(vertical: 12),
-                  //       child: InkWell(
-                  //         onSecondaryTapUp: (details) {
-                  //           _showPopupMenu(request, details.globalPosition);
-                  //         },
-                  //         onTap: () => widget.controller.select(request),
-                  //         child: Padding(
-                  //           padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-                  //           child: Column(
-                  //             crossAxisAlignment: CrossAxisAlignment.start,
-                  //             children: [
-                  //               Text(request.name, style: TextStyle(fontWeight: FontWeight.bold)),
-                  //               Text(request.method!.toUpperCase()),
-                  //             ],
-                  //           ),
-                  //         ),
-                  //       ),
-                  //     );
-                  //   },
-                  // ),
-                ],
+                ),
               ),
-            ),
+              SliverToBoxAdapter(child: const SizedBox(height: 12)),
+              SliverToBoxAdapter(
+                child: ExpansionPanelList(
+                  expandedHeaderPadding: EdgeInsets.zero,
+                  expansionCallback: (index, isExpanded) {
+                    widget.controller.setProjectExpandedIndex(index);
+                  },
+                  materialGapSize: 0,
+                  children: widget.controller.projects.map<ExpansionPanel>((project) {
+                    bool isExpanded = widget.controller.projectData[project.id]!.isExpanded;
+                    var projectData = widget.controller.projectData[project.id]!;
+
+                    return ExpansionPanel(
+                      canTapOnHeader: true,
+                      isExpanded: isExpanded,
+                      backgroundColor: theme.secondaryHeaderColor.withValues(alpha: 0.2),
+                      headerBuilder: (context, isExpanded) {
+                        return ListTile(
+                          onTap: () => widget.controller.setProjectExpanded(project.id),
+                          title: Opacity(
+                            opacity: 0.85,
+                            child: Text(project.name, style: TextStyle(fontSize: 14)),
+                          ),
+                        );
+                      },
+                      body: Material(
+                        color: theme.cardColor,
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: projectData.requests.length,
+                          padding: const EdgeInsets.symmetric(vertical: 0),
+                          itemBuilder: (context, index) {
+                            Request request = projectData.requests[index];
+
+                            return Container(
+                              margin: const EdgeInsets.symmetric(vertical: 12),
+                              child: InkWell(
+                                onSecondaryTapUp: (details) {
+                                  _showPopupMenu(request, details.globalPosition);
+                                },
+                                onTap: () => widget.controller.select(request),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(request.name, style: TextStyle(fontWeight: FontWeight.bold)),
+                                      Text(
+                                        request.method!.toUpperCase(),
+                                        style: TextStyle(
+                                          color: methodColor[request.method!.toUpperCase()],
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
           ),
+        ),
+      ),
     );
   }
 }

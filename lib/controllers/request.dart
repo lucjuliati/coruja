@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:drift/drift.dart';
 import 'package:flutter/material.dart';
 
 import '../database/database.dart';
@@ -20,6 +21,7 @@ class RequestController extends ChangeNotifier {
   Request? selectedRequest;
   List<Project> projects = [];
   List<Request> requests = [];
+  dynamic response;
   var projectData = <int, ProjectData>{};
 
   void select(Request request) {
@@ -29,7 +31,7 @@ class RequestController extends ChangeNotifier {
 
   void setProjectExpanded(int id) {
     projectData[id]?.isExpanded = !projectData[id]!.isExpanded;
-    getRequests(projectData[id]!.project);
+    getRequests(projectData[id]!.project.id);
     notifyListeners();
   }
 
@@ -37,26 +39,42 @@ class RequestController extends ChangeNotifier {
     int key = projectData.entries.toList()[index].key;
     projectData[key]?.isExpanded = !projectData[key]!.isExpanded;
 
-    getRequests(projectData[key]!.project);
+    getRequests(projectData[key]!.project.id);
     notifyListeners();
   }
 
-  Future<void> createResource(String key, bool value) async {
-    if (key == "request") {
-      // await db
-      //     .into(db.requests)
-      //     .insert(RequestsCompanion.insert(name: "New request", method: Value("get")))
-      //     .then((id) {
-      //       var data = getSavedRequests();
-      //       print(data);
-      //     });
-    } else if (key == "project") {
-      await db.into(db.projects).insert(ProjectsCompanion.insert(name: "New Project")).then((id) {
+  Future<void> createRequest({String? name, required int project}) async {
+    try {
+      await db.into(db.requests).insert(
+            RequestsCompanion.insert(
+              name: 'New request',
+              method: Value('get'),
+              project: Value(project),
+            ),
+          );
+
+      var data = getRequests(projectData[project]!.project.id);
+      print(data);
+    } catch (err) {
+      debugPrint(err.toString());
+    }
+  }
+
+  Future<void> createProject() async {
+    try {
+      await db.into(db.projects).insert(ProjectsCompanion.insert(name: 'New Project')).then((id) {
         var data = getProjects();
         print(data);
       });
-    }
 
+      notifyListeners();
+    } catch (err) {
+      debugPrint(err.toString());
+    }
+  }
+
+  void clearResponse() {
+    response = null;
     notifyListeners();
   }
 
@@ -68,21 +86,37 @@ class RequestController extends ChangeNotifier {
     }
 
     notifyListeners();
-
-    print("total projects ${requests.length}");
     return projects;
   }
 
-  Future<List<Request>> getRequests(Project project) async {
-    print(project.id);
-    // requests = (await db.select(db.requests) .get());
-    var query = db.select(db.requests)..where((request) => request.project.equals(project.id));
+  Future<List<Request>> getRequests(int projectId) async {
+    var query = db.select(db.requests)..where((request) => request.project.equals(projectId));
     requests = await query.get();
+    projectData[projectId]!.requests = requests;
 
     notifyListeners();
-
-    print("total requests ${requests.length}");
     return requests;
+  }
+
+  Future<void> saveRequest({String? name, String? url, String? method}) async {
+    try {
+      await db.update(db.requests).replace(
+            selectedRequest!.copyWith(
+              name: name,
+              url: Value(url),
+              method: Value(method ?? 'get'),
+            ),
+          );
+
+      await getRequests(selectedRequest!.project!);
+
+      var query = db.select(db.requests)..where((request) => request.id.equals(selectedRequest!.id));
+
+      selectedRequest = (await query.getSingle());
+      notifyListeners();
+    } catch (err) {
+      debugPrint(err.toString());
+    }
   }
 
   Future<void> send({required String url, required String method}) async {
@@ -116,7 +150,7 @@ class RequestController extends ChangeNotifier {
                 children: [
                   Icon(Icons.close),
                   Text(
-                    "Invalid URL!",
+                    'Invalid URL!',
                     style: TextStyle(color: Theme.of(context).textTheme.bodySmall!.color),
                   ),
                 ],
@@ -128,16 +162,20 @@ class RequestController extends ChangeNotifier {
       return;
     }
 
-    var address = Uri.parse('https://jsonplaceholder.typicode.com/posts/1');
+    // var address = Uri.parse('https://jsonplaceholder.typicode.com/posts/1');
+    var address = Uri.parse(url);
+    print(address);
     var httpClient = HttpClient();
 
     try {
-      var request = await httpClient.getUrl(address); // Open the request
-      var response = await request.close(); // Send the request
+      var request = await httpClient.getUrl(address);
+      var response = await request.close();
 
       if (response.statusCode == 200) {
         var responseBody = await response.transform(utf8.decoder).join();
         print('Response: $responseBody');
+        this.response = responseBody;
+        notifyListeners();
       } else {
         print('Error: HTTP ${response.statusCode}');
       }

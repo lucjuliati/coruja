@@ -1,4 +1,4 @@
-package com.example.flutter_request
+package com.coruja.app
 
 import io.flutter.embedding.android.FlutterActivity
 

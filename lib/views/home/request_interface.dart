@@ -1,9 +1,10 @@
 import 'dart:collection';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../components/label.dart';
+import '../../components/param_tab.dart';
 import '../../controllers/request.dart';
 
 class RequestInterface extends StatefulWidget {
@@ -48,22 +49,22 @@ class _RequestInterfaceState extends State<RequestInterface> {
   }
 
   void requestListener() {
-    if (id != widget.controller.selectedRequest?.id) {
+    var selected = widget.controller.selectedRequest;
+
+    if (selected != null && id != selected.id) {
       Future.delayed(const Duration(milliseconds: 100), () {
-        if (name.text != widget.controller.selectedRequest?.name) {
-          name.text = widget.controller.selectedRequest?.name ?? '';
+        if (name.text != selected.name) {
+          name.text = selected.name;
         }
 
-        if (url.text != widget.controller.selectedRequest?.url) {
-          url.text = widget.controller.selectedRequest?.url ?? '';
+        if (url.text != selected.url) {
+          url.text = selected.url ?? '';
         }
       });
 
       var method = MethodLabel.values.firstWhere(
-        (element) => element.label == widget.controller.selectedRequest?.method,
-        orElse: () {
-          return MethodLabel.get;
-        },
+        (element) => element.label == widget.controller.selectedRequest?.method!.toUpperCase(),
+        orElse: () => MethodLabel.get,
       );
 
       setState(() {
@@ -101,6 +102,53 @@ class _RequestInterfaceState extends State<RequestInterface> {
     );
   }
 
+  void send() {
+    final RegExp urlRegex = RegExp(
+      r'^(https?:\/\/)'
+      r'((localhost|\d{1,3}(\.\d{1,3}){3}|[a-zA-Z0-9.-]+)'
+      r'(:\d{1,5})?)'
+      r'(\/[^\s]*)?$',
+      caseSensitive: false,
+      multiLine: false,
+    );
+
+    if (!urlRegex.hasMatch(url.text)) {
+      ScaffoldMessenger.of(context).clearSnackBars();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          content: Align(
+            alignment: Alignment.bottomRight,
+            child: Container(
+              width: 350,
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+              decoration: BoxDecoration(
+                color: Theme.of(context).secondaryHeaderColor.withValues(alpha: 0.4),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Row(
+                spacing: 8,
+                children: [
+                  Icon(Icons.close),
+                  Text(
+                    'Invalid URL!',
+                    style: TextStyle(color: Theme.of(context).textTheme.bodySmall!.color),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      return;
+    } else {
+      widget.controller.send(url: url.text, method: selectedMethod!.label);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     ThemeData theme = Theme.of(context);
@@ -114,19 +162,19 @@ class _RequestInterfaceState extends State<RequestInterface> {
         focusNode: keyboardFocus,
         onKeyEvent: _handleKeyEvent,
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(4),
           child: Container(
             width: MediaQuery.of(context).size.width,
-            margin: const EdgeInsets.symmetric(vertical: 16, horizontal: 15),
-            decoration: BoxDecoration(color: theme.cardColor, borderRadius: BorderRadius.circular(12)),
+            margin: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+            decoration: BoxDecoration(color: theme.cardColor, borderRadius: BorderRadius.circular(4)),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    spacing: 16,
+                    spacing: 8,
                     children: [
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -137,15 +185,16 @@ class _RequestInterfaceState extends State<RequestInterface> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Label(text: 'Name'),
-                                Container(
+                                SizedBox(
                                   width: MediaQuery.of(context).size.width,
                                   child: TextField(
                                     controller: name,
                                     cursorRadius: Radius.circular(12),
+                                    style: TextStyle(fontSize: 13),
                                     decoration: InputDecoration(
                                       alignLabelWithHint: false,
-                                      constraints: BoxConstraints(maxHeight: 45),
+                                      contentPadding: const EdgeInsets.only(bottom: 4),
+                                      constraints: BoxConstraints(maxHeight: 36),
                                       // contentPadding: const EdgeInsets.symmetric(vertical: 30)
                                       // border: OutlineInputBorder(borderSide: BorderSide(color: Colors.transparent)),
                                     ),
@@ -164,7 +213,7 @@ class _RequestInterfaceState extends State<RequestInterface> {
                               child: Row(
                                 spacing: 7,
                                 children: [
-                                  Icon(Icons.save_outlined, size: 21, color: Colors.white),
+                                  Icon(CupertinoIcons.floppy_disk, size: 18, color: Colors.white),
                                   Text(
                                     'Save',
                                     style: TextStyle(color: Colors.white),
@@ -183,20 +232,26 @@ class _RequestInterfaceState extends State<RequestInterface> {
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(4),
                               child: Material(
+                                color: Colors.transparent,
                                 shape: RoundedRectangleBorder(
-                                  side: BorderSide(color: theme.dividerColor, width: 2),
+                                  side: BorderSide(color: theme.dividerColor, width: 1.5),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: PopupMenuButton<MethodLabel>(
+                                  tooltip: null,
                                   initialValue: MethodLabel.get,
+                                  color: theme.inputDecorationTheme.fillColor,
+                                  padding: const EdgeInsets.symmetric(vertical: 0),
+                                  shape: RoundedRectangleBorder(side: BorderSide(color: theme.dividerColor)),
                                   itemBuilder: (BuildContext context) => MethodLabel.entries,
                                   onSelected: (MethodLabel item) {
+                                    widget.controller.saveRequest(method: item.label);
                                     setState(() {
                                       selectedMethod = item;
                                     });
                                   },
                                   child: Padding(
-                                    padding: const EdgeInsets.only(top: 9.5, bottom: 9.5, left: 10, right: 14),
+                                    padding: const EdgeInsets.only(top: 6, bottom: 6, left: 10, right: 14),
                                     child: Row(
                                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
@@ -207,7 +262,7 @@ class _RequestInterfaceState extends State<RequestInterface> {
                                           style: TextStyle(
                                             color: selectedMethod?.color,
                                             fontWeight: FontWeight.w500,
-                                            fontSize: 16,
+                                            fontSize: 14,
                                           ),
                                         ),
                                       ],
@@ -221,61 +276,101 @@ class _RequestInterfaceState extends State<RequestInterface> {
                             child: TextField(
                               controller: url,
                               focusNode: urlFocus,
-                              cursorRadius: Radius.circular(12),
                               decoration: InputDecoration(
                                 alignLabelWithHint: false,
-                                filled: true,
-                                fillColor: Colors.transparent,
                                 border: InputBorder.none,
-                                constraints: BoxConstraints(maxHeight: 42),
+                                constraints: BoxConstraints(maxHeight: 36),
                                 enabledBorder: OutlineInputBorder(
-                                  borderSide: BorderSide(color: theme.dividerColor, width: 2),
+                                  borderSide: BorderSide(color: theme.dividerColor, width: 1.5),
                                 ),
+                                contentPadding: const EdgeInsets.only(left: 8, right: 8),
                                 focusedBorder: OutlineInputBorder(
-                                  borderSide: BorderSide(color: theme.dividerColor, width: 2),
+                                  borderSide: BorderSide(
+                                    color: theme.colorScheme.primary,
+                                    width: 1.5,
+                                  ),
                                 ),
                                 hintText: 'https://example.com',
                                 hintStyle: TextStyle(
                                   color: theme.textTheme.bodyMedium!.color!.withValues(alpha: 0.45),
-                                  fontSize: 15,
+                                  fontSize: 13,
                                 ),
                               ),
-                              style: TextStyle(fontSize: 15),
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: theme.textTheme.bodyMedium!.color!.withValues(alpha: 0.85),
+                              ),
                               onSubmitted: (String value) {
-                                widget.controller.send(url: url.text, method: selectedMethod!.label);
+                                send();
                                 url.text = value;
                                 urlFocus.requestFocus();
                               },
                             ),
                           ),
                           TextButton(
-                            onPressed: () => widget.controller.send(url: url.text, method: selectedMethod!.label),
-                            style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 18)),
-                            child: Row(spacing: 6, children: [Text('Send'), Icon(Icons.subdirectory_arrow_right_rounded)]),
+                            onPressed: send,
+                            style: TextButton.styleFrom(
+                              backgroundColor: theme.primaryColor,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 18),
+                            ),
+                            child: Row(
+                              spacing: 6,
+                              children: [
+                                Text('Send', style: TextStyle(color: Colors.white)),
+                                Icon(
+                                  CupertinoIcons.arrow_right,
+                                  color: Colors.white,
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),
                     ],
                   ),
                 ),
+                ParamTabs(controller: widget.controller),
                 const SizedBox(height: 120),
-                if (widget.controller.response != null)
-                  Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        border: Border(top: BorderSide(color: theme.dividerColor)),
-                        borderRadius: BorderRadius.only(
-                          bottomLeft: Radius.circular(12),
-                          bottomRight: Radius.circular(12),
+                Builder(
+                  builder: (context) {
+                    if (widget.controller.loading) {
+                      return Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: SizedBox(
+                            height: 30,
+                            width: 30,
+                            child: CircularProgressIndicator(),
+                          ),
                         ),
-                      ),
-                      child: SingleChildScrollView(
-                        child: Column(
-                          children: [widget.controller.response!],
+                      );
+                    }
+
+                    if (widget.controller.response != null) {
+                      return Expanded(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            border: Border(top: BorderSide(color: theme.dividerColor)),
+                            borderRadius: BorderRadius.only(
+                              bottomLeft: Radius.circular(12),
+                              bottomRight: Radius.circular(12),
+                            ),
+                          ),
+                          child: SingleChildScrollView(
+                            child: Column(
+                              children: [widget.controller.response!],
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                  ),
+                      );
+                    }
+
+                    return Container();
+                  },
+                ),
               ],
             ),
           ),
@@ -291,6 +386,7 @@ enum MethodLabel {
   get('GET', Color(0xFF59B156)),
   post('POST', Colors.orange),
   patch('PATCH', Colors.blue),
+  put('PUT', Color(0xFFA267CB)),
   delete('DELETE', Color(0xFFE45656));
 
   const MethodLabel(this.label, this.color);
@@ -301,7 +397,12 @@ enum MethodLabel {
     values.map<MethodEntry>(
       (MethodLabel color) => MethodEntry(
         value: color,
-        child: Text(color.label, style: TextStyle(color: color.color, fontWeight: FontWeight.bold)),
+        height: 35,
+        padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
+        child: Text(
+          color.label,
+          style: TextStyle(color: color.color, fontWeight: FontWeight.bold),
+        ),
       ),
     ),
   );

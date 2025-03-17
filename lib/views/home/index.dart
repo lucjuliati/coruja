@@ -30,7 +30,7 @@ class _HomeState extends State<Home> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               SideMenu(controller: controller),
-              if (controller.selectedRequest != null) RequestInterface(controller: controller),
+              RequestInterface(controller: controller),
             ],
           );
         },

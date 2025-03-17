@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../components/cancel_button.dart';
+import '../../components/input.dart';
 import '../../components/label.dart';
+import '../../components/select.dart';
 import '../../controllers/request.dart';
 import '../../database/database.dart';
 
@@ -18,6 +21,7 @@ class _SideMenuState extends State<SideMenu> {
     'GET': Color(0xFF59B156),
     'POST': Colors.orange,
     'PATCH': Colors.blue,
+    'PUT': Color(0xFFA267CB),
     'DELETE': Color(0xFFE45656),
   };
 
@@ -59,8 +63,8 @@ class _SideMenuState extends State<SideMenu> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 makeButton('Project', Color(0xFFF1B127).withValues(alpha: 0.8), Icons.folder, () {
-                  widget.controller.createProject();
-                  Navigator.of(context).pop();
+                  Navigator.pop(context);
+                  Future.delayed(Duration(milliseconds: 200), newProjectDialog);
                 }),
                 makeButton('Request', const Color(0xFF5A72DC), Icons.http, () {
                   Navigator.pop(context);
@@ -74,10 +78,13 @@ class _SideMenuState extends State<SideMenu> {
     );
   }
 
-  void newRequestDialog() {
-    ThemeData theme = Theme.of(context);
+  void newRequestDialog({Project? project}) {
     var name = TextEditingController();
     int? selectedProject;
+
+    if (project != null) {
+      selectedProject = project.id;
+    }
 
     showDialog(
       context: context,
@@ -103,64 +110,32 @@ class _SideMenuState extends State<SideMenu> {
                       style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
                     ),
                     const SizedBox(height: 15),
-                    const Label(text: 'Request name'),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
-                      child: TextField(
-                        controller: name,
-                        decoration: InputDecoration(
-                          filled: true,
-                          fillColor: theme.inputDecorationTheme.fillColor,
-                          border: InputBorder.none,
-                          focusedBorder: InputBorder.none,
-                          enabledBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: Colors.transparent),
-                          ),
-                        ),
-                        style: TextStyle(fontSize: 14),
-                      ),
-                    ),
+                    Input(label: 'Name', controller: name),
                     const SizedBox(height: 8),
-                    const Label(text: 'Project'),
-                    SizedBox(
-                      width: MediaQuery.of(context).size.width,
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(6),
-                        child: Material(
-                          color: theme.inputDecorationTheme.fillColor,
-                          child: DropdownButton(
-                            onChanged: (value) => setState(() {
-                              selectedProject = value;
-                            }),
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                            underline: Container(
-                              decoration: BoxDecoration(
-                                border: Border(
-                                  bottom: BorderSide(color: theme.dividerColor),
-                                ),
-                              ),
-                            ),
-                            style: TextStyle(fontSize: 14),
-                            value: selectedProject,
-                            icon: const Icon(Icons.arrow_drop_down),
-                            isExpanded: true,
-                            items: menuItems,
-                          ),
-                        ),
-                      ),
+                    Select(
+                      label: 'Project',
+                      items: menuItems,
+                      onChanged: (value) => setState(() {
+                        selectedProject = value;
+                      }),
+                      value: selectedProject,
                     ),
                     const SizedBox(height: 40),
-                    Align(
-                      alignment: Alignment.bottomRight,
-                      child: FilledButton(
-                        onPressed: selectedProject != null
-                            ? () {
-                                widget.controller.createRequest(name: name.text, project: selectedProject!);
-                                Navigator.of(context).pop();
-                              }
-                            : null,
-                        child: Text('Create'),
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      spacing: 6,
+                      children: [
+                        CancelButton(onPressed: Navigator.of(context).pop),
+                        FilledButton(
+                          onPressed: selectedProject != null
+                              ? () {
+                                  widget.controller.createRequest(name: name.text, project: selectedProject!);
+                                  Navigator.of(context).pop();
+                                }
+                              : null,
+                          child: Text('Create'),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -172,14 +147,91 @@ class _SideMenuState extends State<SideMenu> {
     );
   }
 
+  void newProjectDialog() {
+    ThemeData theme = Theme.of(context);
+    var name = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          child: Container(
+            height: 240,
+            width: MediaQuery.of(context).size.width * 0.4,
+            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'New Project',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
+                ),
+                const SizedBox(height: 15),
+                const Label(text: 'Name'),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: TextField(
+                    controller: name,
+                    autofocus: true,
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: theme.inputDecorationTheme.fillColor,
+                      border: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.transparent),
+                      ),
+                    ),
+                    style: TextStyle(fontSize: 14),
+                  ),
+                ),
+                const SizedBox(height: 40),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  spacing: 6,
+                  children: [
+                    CancelButton(onPressed: Navigator.of(context).pop),
+                    FilledButton(
+                      onPressed: () {
+                        widget.controller.createProject(name: name.text);
+                        Navigator.of(context).pop();
+                      },
+                      child: Text('Create'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   void _showPopupMenu(Request request, Offset position) async {
+    ThemeData theme = Theme.of(context);
+
     await showMenu(
       context: context,
       position: RelativeRect.fromLTRB(position.dx, position.dy, position.dx + 1, position.dy + 1),
       items: [
-        PopupMenuItem(value: 'rename', child: Text('Rename')),
-        PopupMenuItem(value: 'delete', child: Text('Delete')),
+        PopupMenuItem(
+          value: 'rename',
+          height: 40,
+          padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
+          child: Text('Rename'),
+        ),
+        PopupMenuItem(
+          value: 'delete',
+          height: 40,
+          padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
+          child: Text('Delete'),
+        ),
       ],
+      menuPadding: const EdgeInsets.symmetric(vertical: 0),
+      shape: RoundedRectangleBorder(
+        side: BorderSide(color: theme.dividerColor),
+      ),
     ).then((value) {
       if (value == 'delete') {
         widget.controller.deleteRequest(request);
@@ -188,18 +240,48 @@ class _SideMenuState extends State<SideMenu> {
   }
 
   void _showProjectMenu(Project project, Offset position) async {
+    ThemeData theme = Theme.of(context);
+
+    List<Map> items = [
+      {'value': 'new_request', 'label': 'New request'},
+      {'value': 'rename', 'label': 'Rename'},
+      {'value': 'delete', 'label': 'Delete'},
+    ];
+
+    List<PopupMenuEntry> menuItems = [];
+
+    for (var item in items) {
+      menuItems.add(
+        PopupMenuItem(
+          value: item['value'],
+          height: 40,
+          padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
+          child: Text(item['label']),
+        ),
+      );
+    }
+
     await showMenu(
       context: context,
-      position: RelativeRect.fromLTRB(position.dx, position.dy, position.dx + 1, position.dy + 1),
-      items: [
-        PopupMenuItem(value: 'rename', child: Text('Rename')),
-        PopupMenuItem(value: 'delete', child: Text('Delete')),
-      ],
+      color: theme.inputDecorationTheme.fillColor,
+      position: RelativeRect.fromLTRB(
+        position.dx,
+        position.dy,
+        position.dx + 1,
+        position.dy + 1,
+      ),
+      menuPadding: const EdgeInsets.symmetric(vertical: 0),
+      shape: RoundedRectangleBorder(
+        side: BorderSide(color: theme.dividerColor),
+      ),
+      items: menuItems,
     ).then((value) {
-      if (value == 'delete') {
-        widget.controller.deleteProject(project);
+      if (value == 'new_request') {
+        newRequestDialog(project: project);
       } else if (value == 'rename') {
         widget.controller.renameProject(project);
+      } else if (value == 'delete') {
+        widget.controller.deleteProject(project);
       }
     });
   }
@@ -229,7 +311,19 @@ class _SideMenuState extends State<SideMenu> {
                       ),
                       FilledButton(
                         onPressed: newResourceDialog,
-                        child: Row(spacing: 6, children: [Icon(Icons.add), Text('New')]),
+                        style: FilledButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+                        ),
+                        child: Row(
+                          spacing: 4,
+                          children: [
+                            Icon(Icons.add),
+                            Text('New', style: TextStyle(fontSize: 13)),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -254,17 +348,18 @@ class _SideMenuState extends State<SideMenu> {
                       headerBuilder: (context, isExpanded) {
                         Widget child = ListTile(
                           onTap: () => widget.controller.setProjectExpanded(project.id),
-                          title: Opacity(
-                            opacity: 0.85,
-                            child: Text(project.name, style: TextStyle(fontSize: 14)),
-                          ),
+                          title: Text(project.name, style: TextStyle(fontSize: 14)),
                         );
 
                         if (projectData.isRenaming) {
                           var projectName = TextEditingController(text: project.name);
                           child = Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 6),
-                            child: TextField(controller: projectName, style: TextStyle(fontSize: 14)),
+                            child: TextField(
+                              controller: projectName,
+                              style: TextStyle(fontSize: 14),
+                              onSubmitted: (value) => widget.controller.saveProject(projectData.project, name: value),
+                            ),
                           );
                         }
 
@@ -283,12 +378,15 @@ class _SideMenuState extends State<SideMenu> {
                           padding: const EdgeInsets.symmetric(vertical: 0),
                           itemBuilder: (context, index) {
                             Request request = projectData.requests[index];
+                            Color borderColor = request.id == widget.controller.selectedRequest?.id
+                                ? theme.colorScheme.primary.withValues(alpha: 0.7)
+                                : Colors.transparent;
 
                             return Container(
                               decoration: BoxDecoration(
-                                color: request.id == widget.controller.selectedRequest?.id ? theme.primaryColor : Colors.transparent,
                                 border: Border(
                                   bottom: BorderSide(color: theme.dividerColor),
+                                  left: BorderSide(width: 4, color: borderColor),
                                 ),
                               ),
                               child: InkWell(
@@ -297,16 +395,23 @@ class _SideMenuState extends State<SideMenu> {
                                 },
                                 onTap: () => widget.controller.select(request),
                                 child: Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                                  padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(request.name, style: TextStyle(fontWeight: FontWeight.bold)),
+                                      Opacity(
+                                        opacity: 0.8,
+                                        child: Text(
+                                          request.name,
+                                          style: TextStyle(fontSize: 13),
+                                        ),
+                                      ),
                                       Text(
                                         request.method!.toUpperCase(),
                                         style: TextStyle(
                                           color: methodColor[request.method!.toUpperCase()],
                                           fontWeight: FontWeight.bold,
+                                          fontSize: 12,
                                         ),
                                       ),
                                     ],

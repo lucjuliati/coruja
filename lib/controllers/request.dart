@@ -23,12 +23,20 @@ class RequestController extends ChangeNotifier {
   List<Project> projects = [];
   List<Request> requests = [];
   Widget? response;
+  bool loading = false;
   var projectData = <int, ProjectData>{};
+  int tabIndex = 0;
 
   void select(Request request) {
     response = null;
+    selectedRequest = null;
     notifyListeners();
     selectedRequest = request;
+    notifyListeners();
+  }
+
+  void setTab(int index) {
+    tabIndex = index;
     notifyListeners();
   }
 
@@ -85,12 +93,10 @@ class RequestController extends ChangeNotifier {
     }
   }
 
-  Future<void> createProject() async {
+  Future<void> createProject({String? name}) async {
     try {
-      await db.into(db.projects).insert(ProjectsCompanion.insert(name: 'New Project')).then((id) {
-        var data = getProjects();
-        print(data);
-      });
+      await db.into(db.projects).insert(ProjectsCompanion.insert(name: name ?? 'New Project'));
+      await getProjects();
 
       notifyListeners();
     } catch (err) {
@@ -105,7 +111,6 @@ class RequestController extends ChangeNotifier {
 
   Future<List<Project>> getProjects() async {
     projects = (await db.select(db.projects).get());
-
     projectData = {};
 
     for (Project project in projects) {
@@ -132,9 +137,9 @@ class RequestController extends ChangeNotifier {
     try {
       await db.update(db.requests).replace(
             selectedRequest!.copyWith(
-              name: name,
-              url: Value(url),
-              method: Value(method ?? 'get'),
+              name: name ?? selectedRequest?.name,
+              url: Value(url ?? selectedRequest?.url),
+              method: Value(method ?? selectedRequest?.method),
             ),
           );
 
@@ -149,74 +154,54 @@ class RequestController extends ChangeNotifier {
     }
   }
 
-  Future<void> send({required String url, required String method}) async {
-    final RegExp urlRegex = RegExp(
-      r'^(https?:\/\/)'
-      r'((localhost|\d{1,3}(\.\d{1,3}){3}|[a-zA-Z0-9.-]+)'
-      r'(:\d{1,5})?)'
-      r'(\/[^\s]*)?$',
-      caseSensitive: false,
-      multiLine: false,
-    );
-
-    if (!urlRegex.hasMatch(url)) {
-      ScaffoldMessenger.of(context).clearSnackBars();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          content: Align(
-            alignment: Alignment.bottomRight,
-            child: Container(
-              width: 350,
-              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
-              decoration: BoxDecoration(
-                color: Theme.of(context).secondaryHeaderColor.withValues(alpha: 0.4),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Row(
-                spacing: 8,
-                children: [
-                  Icon(Icons.close),
-                  Text(
-                    'Invalid URL!',
-                    style: TextStyle(color: Theme.of(context).textTheme.bodySmall!.color),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
-
-      return;
+  Future<void> saveProject(Project project, {String? name}) async {
+    try {
+      await db.update(db.projects).replace(project.copyWith(name: name));
+      getProjects();
+    } catch (err) {
+      debugPrint(err.toString());
     }
+  }
 
+  Future<void> send({required String url, required String method}) async {
     Uri address = Uri.parse(url);
     HttpClient httpClient = HttpClient();
 
     try {
-      HttpClientRequest request = await httpClient.getUrl(address);
-      var response = await request.close();
+      var methodMapping = <String, dynamic>{
+        'GET': await httpClient.getUrl(address),
+        'POST': await httpClient.postUrl(address),
+        'PATCH': await httpClient.patchUrl(address),
+        'PUT': await httpClient.putUrl(address),
+        'DELETE': await httpClient.deleteUrl(address),
+      };
 
-      if (response.statusCode == 200) {
-        var responseBody = await response.transform(utf8.decoder).join();
+      HttpClientRequest request = methodMapping[method.toUpperCase()];
 
-        this.response = JsonView.string(
-          responseBody,
-          theme: JsonViewTheme(
-            defaultTextStyle: TextStyle(fontSize: 14),
-            backgroundColor: Colors.transparent,
-            keyStyle: TextStyle(color: const Color.fromARGB(255, 109, 188, 224)),
-            intStyle: TextStyle(color: const Color.fromARGB(255, 111, 184, 114)),
-            stringStyle: TextStyle(color: const Color.fromARGB(255, 201, 129, 96)),
-          ),
-        );
-        notifyListeners();
-      } else {
-        print('Error: HTTP ${response.statusCode}');
-      }
+      loading = true;
+      notifyListeners();
+
+      request.close().then((res) async {
+        if (res.statusCode == 200) {
+          String body = await res.transform(utf8.decoder).join();
+
+          response = JsonView.string(
+            body,
+            theme: JsonViewTheme(
+              defaultTextStyle: TextStyle(fontSize: 12.5),
+              backgroundColor: Colors.transparent,
+              keyStyle: TextStyle(color: const Color.fromARGB(255, 109, 188, 224)),
+              intStyle: TextStyle(color: const Color.fromARGB(255, 111, 184, 114)),
+              stringStyle: TextStyle(color: const Color.fromARGB(255, 201, 129, 96)),
+            ),
+          );
+
+          loading = false;
+          notifyListeners();
+        } else {
+          print('Error: HTTP ${res.statusCode}');
+        }
+      });
     } catch (e) {
       print('Exception: $e');
     } finally {

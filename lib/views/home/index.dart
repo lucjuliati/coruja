@@ -28,7 +28,10 @@ class _HomeState extends State<Home> {
         builder: (context, child) {
           return Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [SideMenu(controller: controller), RequestInterface(controller: controller)],
+            children: [
+              SideMenu(controller: controller),
+              if (controller.selectedRequest != null) RequestInterface(controller: controller),
+            ],
           );
         },
       ),

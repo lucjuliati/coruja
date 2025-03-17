@@ -2,7 +2,6 @@ import 'dart:collection';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_json_view/flutter_json_view.dart';
 
 import '../../components/label.dart';
 import '../../controllers/request.dart';
@@ -17,6 +16,7 @@ class RequestInterface extends StatefulWidget {
 }
 
 class _RequestInterfaceState extends State<RequestInterface> {
+  late int id;
   var name = TextEditingController();
   var url = TextEditingController();
   FocusNode urlFocus = FocusNode();
@@ -28,12 +28,6 @@ class _RequestInterfaceState extends State<RequestInterface> {
   void initState() {
     super.initState();
     widget.controller.addListener(requestListener);
-    keyboardFocus.requestFocus();
-  }
-
-  void requestListener() {
-    name.text = widget.controller.selectedRequest?.name ?? '';
-    url.text = widget.controller.selectedRequest?.url ?? '';
 
     var method = MethodLabel.values.firstWhere(
       (element) => element.label == widget.controller.selectedRequest?.method,
@@ -43,8 +37,39 @@ class _RequestInterfaceState extends State<RequestInterface> {
     );
 
     setState(() {
+      id = widget.controller.selectedRequest?.id ?? 0;
       selectedMethod = method;
     });
+
+    name.text = widget.controller.selectedRequest?.name ?? '';
+    url.text = widget.controller.selectedRequest?.url ?? '';
+
+    keyboardFocus.requestFocus();
+  }
+
+  void requestListener() {
+    if (id != widget.controller.selectedRequest?.id) {
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (name.text != widget.controller.selectedRequest?.name) {
+          name.text = widget.controller.selectedRequest?.name ?? '';
+        }
+
+        if (url.text != widget.controller.selectedRequest?.url) {
+          url.text = widget.controller.selectedRequest?.url ?? '';
+        }
+      });
+
+      var method = MethodLabel.values.firstWhere(
+        (element) => element.label == widget.controller.selectedRequest?.method,
+        orElse: () {
+          return MethodLabel.get;
+        },
+      );
+
+      setState(() {
+        selectedMethod = method;
+      });
+    }
   }
 
   @override
@@ -125,19 +150,27 @@ class _RequestInterfaceState extends State<RequestInterface> {
                                       // border: OutlineInputBorder(borderSide: BorderSide(color: Colors.transparent)),
                                     ),
                                   ),
-                                )
+                                ),
                               ],
                             ),
                           ),
-                          FilledButton(
+                          TextButton(
                             onPressed: save,
                             style: FilledButton.styleFrom(
-                              backgroundColor: const Color(0xFF2760C2),
-                              padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 32),
+                              padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 10),
                             ),
-                            child: Text(
-                              'Save',
-                              style: TextStyle(color: Colors.white),
+                            child: Opacity(
+                              opacity: 0.75,
+                              child: Row(
+                                spacing: 7,
+                                children: [
+                                  Icon(Icons.save_outlined, size: 21, color: Colors.white),
+                                  Text(
+                                    'Save',
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ],
@@ -210,6 +243,7 @@ class _RequestInterfaceState extends State<RequestInterface> {
                               style: TextStyle(fontSize: 15),
                               onSubmitted: (String value) {
                                 widget.controller.send(url: url.text, method: selectedMethod!.label);
+                                url.text = value;
                                 urlFocus.requestFocus();
                               },
                             ),
@@ -228,9 +262,7 @@ class _RequestInterfaceState extends State<RequestInterface> {
                 if (widget.controller.response != null)
                   Expanded(
                     child: Container(
-                      width: MediaQuery.of(context).size.width,
                       decoration: BoxDecoration(
-                        color: const Color.fromARGB(255, 22, 22, 26),
                         border: Border(top: BorderSide(color: theme.dividerColor)),
                         borderRadius: BorderRadius.only(
                           bottomLeft: Radius.circular(12),
@@ -239,27 +271,7 @@ class _RequestInterfaceState extends State<RequestInterface> {
                       ),
                       child: SingleChildScrollView(
                         child: Column(
-                          children: [
-                            SizedBox(
-                              width: MediaQuery.of(context).size.width,
-                              child: Material(
-                                child: InkWell(
-                                  onTap: widget.controller.clearResponse,
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(vertical: 4),
-                                    child: Icon(Icons.arrow_drop_down),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            JsonView.string(
-                              widget.controller.response,
-                              theme: JsonViewTheme(
-                                defaultTextStyle: TextStyle(fontSize: 14),
-                                backgroundColor: Colors.transparent,
-                              ),
-                            ),
-                          ],
+                          children: [widget.controller.response!],
                         ),
                       ),
                     ),

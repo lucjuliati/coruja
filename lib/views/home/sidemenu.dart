@@ -187,6 +187,23 @@ class _SideMenuState extends State<SideMenu> {
     });
   }
 
+  void _showProjectMenu(Project project, Offset position) async {
+    await showMenu(
+      context: context,
+      position: RelativeRect.fromLTRB(position.dx, position.dy, position.dx + 1, position.dy + 1),
+      items: [
+        PopupMenuItem(value: 'rename', child: Text('Rename')),
+        PopupMenuItem(value: 'delete', child: Text('Delete')),
+      ],
+    ).then((value) {
+      if (value == 'delete') {
+        widget.controller.deleteProject(project);
+      } else if (value == 'rename') {
+        widget.controller.renameProject(project);
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     ThemeData theme = Theme.of(context);
@@ -235,12 +252,27 @@ class _SideMenuState extends State<SideMenu> {
                       isExpanded: isExpanded,
                       backgroundColor: theme.secondaryHeaderColor.withValues(alpha: 0.2),
                       headerBuilder: (context, isExpanded) {
-                        return ListTile(
+                        Widget child = ListTile(
                           onTap: () => widget.controller.setProjectExpanded(project.id),
                           title: Opacity(
                             opacity: 0.85,
                             child: Text(project.name, style: TextStyle(fontSize: 14)),
                           ),
+                        );
+
+                        if (projectData.isRenaming) {
+                          var projectName = TextEditingController(text: project.name);
+                          child = Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 6),
+                            child: TextField(controller: projectName, style: TextStyle(fontSize: 14)),
+                          );
+                        }
+
+                        return InkWell(
+                          onSecondaryTapUp: (details) {
+                            _showProjectMenu(projectData.project, details.globalPosition);
+                          },
+                          child: child,
                         );
                       },
                       body: Material(

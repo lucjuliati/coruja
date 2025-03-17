@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_json_view/flutter_json_view.dart';
 
 import '../database/database.dart';
 
@@ -21,10 +22,12 @@ class RequestController extends ChangeNotifier {
   Request? selectedRequest;
   List<Project> projects = [];
   List<Request> requests = [];
-  dynamic response;
+  Widget? response;
   var projectData = <int, ProjectData>{};
 
   void select(Request request) {
+    response = null;
+    notifyListeners();
     selectedRequest = request;
     notifyListeners();
   }
@@ -38,13 +41,14 @@ class RequestController extends ChangeNotifier {
   void setProjectExpandedIndex(int index) {
     int key = projectData.entries.toList()[index].key;
     projectData[key]?.isExpanded = !projectData[key]!.isExpanded;
+    projectData[key]?.isRenaming = false;
 
     getRequests(projectData[key]!.project.id);
     notifyListeners();
   }
 
   Future<void> deleteRequest(Request request) async {
-    await (db.delete(db.requests)..where((req) => req.id.equals(request.id))).go();
+    await (db.delete(db.requests)..where((r) => r.id.equals(request.id))).go();
 
     if (request.id == selectedRequest?.id) {
       selectedRequest = null;
@@ -52,6 +56,16 @@ class RequestController extends ChangeNotifier {
     }
 
     getRequests(request.project!);
+  }
+
+  Future<void> deleteProject(Project project) async {
+    await (db.delete(db.projects)..where((p) => p.id.equals(project.id))).go();
+    await getProjects();
+  }
+
+  void renameProject(Project project) {
+    projectData[project.id]!.isRenaming = !projectData[project.id]!.isRenaming;
+    notifyListeners();
   }
 
   Future<void> createRequest({String? name, String? method, required int project}) async {
@@ -92,8 +106,13 @@ class RequestController extends ChangeNotifier {
   Future<List<Project>> getProjects() async {
     projects = (await db.select(db.projects).get());
 
+    projectData = {};
+
     for (Project project in projects) {
-      projectData[project.id] = ProjectData(project: project, requests: [], isExpanded: false);
+      projectData[project.id] = ProjectData(
+        project: project,
+        requests: [],
+      );
     }
 
     notifyListeners();
@@ -170,22 +189,30 @@ class RequestController extends ChangeNotifier {
           ),
         ),
       );
+
       return;
     }
 
-    // var address = Uri.parse('https://jsonplaceholder.typicode.com/posts/1');
-    var address = Uri.parse(url);
-    print(address);
-    var httpClient = HttpClient();
+    Uri address = Uri.parse(url);
+    HttpClient httpClient = HttpClient();
 
     try {
-      var request = await httpClient.getUrl(address);
+      HttpClientRequest request = await httpClient.getUrl(address);
       var response = await request.close();
 
       if (response.statusCode == 200) {
         var responseBody = await response.transform(utf8.decoder).join();
-        print('Response: $responseBody');
-        this.response = responseBody;
+
+        this.response = JsonView.string(
+          responseBody,
+          theme: JsonViewTheme(
+            defaultTextStyle: TextStyle(fontSize: 14),
+            backgroundColor: Colors.transparent,
+            keyStyle: TextStyle(color: const Color.fromARGB(255, 109, 188, 224)),
+            intStyle: TextStyle(color: const Color.fromARGB(255, 111, 184, 114)),
+            stringStyle: TextStyle(color: const Color.fromARGB(255, 201, 129, 96)),
+          ),
+        );
         notifyListeners();
       } else {
         print('Error: HTTP ${response.statusCode}');
@@ -201,7 +228,8 @@ class RequestController extends ChangeNotifier {
 class ProjectData {
   Project project;
   List<Request> requests;
-  bool isExpanded;
+  bool isExpanded = false;
+  bool isRenaming = false;
 
-  ProjectData({required this.project, required this.requests, required this.isExpanded});
+  ProjectData({required this.project, required this.requests});
 }

@@ -1,11 +1,17 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:window_size/window_size.dart';
 
 import 'views/home/index.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  print(await (getApplicationSupportDirectory()));
+
+  if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+    setWindowMinSize(const Size(800, 600));
+  }
+
   runApp(const MyApp());
 }
 

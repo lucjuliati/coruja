@@ -59,7 +59,7 @@ class ParamTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Placeholder();
+    return const Text('Params');
   }
 }
 
@@ -68,7 +68,7 @@ class HeadersTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Placeholder();
+    return const Text('Headers');
   }
 }
 
@@ -77,6 +77,6 @@ class BodyTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Placeholder();
+    return const Text('Body');
   }
 }

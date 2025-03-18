@@ -4,9 +4,17 @@ import 'label.dart';
 
 class Input extends StatelessWidget {
   final TextEditingController? controller;
+  final Function(String)? onSubmitted;
   final String? label;
+  final bool autofocus;
 
-  const Input({super.key, this.label, required this.controller});
+  const Input({
+    super.key,
+    this.label,
+    this.onSubmitted,
+    required this.controller,
+    this.autofocus = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +28,10 @@ class Input extends StatelessWidget {
           borderRadius: BorderRadius.circular(6),
           child: TextField(
             controller: controller,
-            autofocus: true,
+            autofocus: autofocus,
+            onSubmitted: (value) {
+              onSubmitted!(value);
+            },
             decoration: InputDecoration(
               filled: true,
               fillColor: theme.inputDecorationTheme.fillColor,

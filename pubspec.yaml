@@ -16,6 +16,11 @@ dependencies:
   path_provider: ^2.1.5
   flutter_json_view: ^1.1.5
   font_awesome_flutter: ^10.8.0
+  flutter_inappwebview: ^6.1.5
+  window_size:
+      git:
+        url: https://github.com/google/flutter-desktop-embedding
+        path: plugins/window_size
 
 dev_dependencies:
   flutter_test:
@@ -54,7 +59,8 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
-    - lib/assets/logo.png  
+    - lib/assets/logo.png
+    - lib/assets/jsonViewer.js
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

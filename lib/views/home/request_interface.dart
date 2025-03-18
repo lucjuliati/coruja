@@ -3,9 +3,11 @@ import 'dart:collection';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
 import '../../components/param_tab.dart';
 import '../../controllers/request.dart';
+import 'components/response_body.dart';
 
 class RequestInterface extends StatefulWidget {
   final RequestController controller;
@@ -15,6 +17,8 @@ class RequestInterface extends StatefulWidget {
   @override
   State<RequestInterface> createState() => _RequestInterfaceState();
 }
+
+WebViewEnvironment? webViewEnvironment;
 
 class _RequestInterfaceState extends State<RequestInterface> {
   late int id;
@@ -103,6 +107,8 @@ class _RequestInterfaceState extends State<RequestInterface> {
   }
 
   void send() {
+    save();
+
     final RegExp urlRegex = RegExp(
       r'^(https?:\/\/)'
       r'((localhost|\d{1,3}(\.\d{1,3}){3}|[a-zA-Z0-9.-]+)'
@@ -192,11 +198,9 @@ class _RequestInterfaceState extends State<RequestInterface> {
                                     cursorRadius: Radius.circular(12),
                                     style: TextStyle(fontSize: 13),
                                     decoration: InputDecoration(
-                                      alignLabelWithHint: false,
                                       contentPadding: const EdgeInsets.only(bottom: 4),
                                       constraints: BoxConstraints(maxHeight: 36),
-                                      // contentPadding: const EdgeInsets.symmetric(vertical: 30)
-                                      // border: OutlineInputBorder(borderSide: BorderSide(color: Colors.transparent)),
+                                      enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: theme.dividerColor, width: 1.5)),
                                     ),
                                   ),
                                 ),
@@ -311,10 +315,10 @@ class _RequestInterfaceState extends State<RequestInterface> {
                             onPressed: send,
                             style: TextButton.styleFrom(
                               backgroundColor: theme.primaryColor,
+                              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 18),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(4),
                               ),
-                              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 18),
                             ),
                             child: Row(
                               spacing: 6,
@@ -334,43 +338,7 @@ class _RequestInterfaceState extends State<RequestInterface> {
                 ),
                 ParamTabs(controller: widget.controller),
                 const SizedBox(height: 120),
-                Builder(
-                  builder: (context) {
-                    if (widget.controller.loading) {
-                      return Center(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          child: SizedBox(
-                            height: 30,
-                            width: 30,
-                            child: CircularProgressIndicator(),
-                          ),
-                        ),
-                      );
-                    }
-
-                    if (widget.controller.response != null) {
-                      return Expanded(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            border: Border(top: BorderSide(color: theme.dividerColor)),
-                            borderRadius: BorderRadius.only(
-                              bottomLeft: Radius.circular(12),
-                              bottomRight: Radius.circular(12),
-                            ),
-                          ),
-                          child: SingleChildScrollView(
-                            child: Column(
-                              children: [widget.controller.response!],
-                            ),
-                          ),
-                        ),
-                      );
-                    }
-
-                    return Container();
-                  },
-                ),
+                ResponseBody(controller: widget.controller),
               ],
             ),
           ),

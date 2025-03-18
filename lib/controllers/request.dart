@@ -3,9 +3,10 @@ import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_json_view/flutter_json_view.dart';
 
 import '../database/database.dart';
+import '../models/project_data.dart';
+import '../models/request_data.dart';
 
 class RequestController extends ChangeNotifier {
   RequestController._internal();
@@ -23,13 +24,16 @@ class RequestController extends ChangeNotifier {
   List<Project> projects = [];
   List<Request> requests = [];
   Widget? response;
+  String? jsonResponse;
   bool loading = false;
   var projectData = <int, ProjectData>{};
+  ResponseData? responseData;
   int tabIndex = 0;
 
   void select(Request request) {
     response = null;
     selectedRequest = null;
+    responseData = null;
     notifyListeners();
     selectedRequest = request;
     notifyListeners();
@@ -86,8 +90,7 @@ class RequestController extends ChangeNotifier {
             ),
           );
 
-      var data = getRequests(projectData[project]!.project.id);
-      print(data);
+      getRequests(projectData[project]!.project.id);
     } catch (err) {
       debugPrint(err.toString());
     }
@@ -166,6 +169,9 @@ class RequestController extends ChangeNotifier {
   Future<void> send({required String url, required String method}) async {
     Uri address = Uri.parse(url);
     HttpClient httpClient = HttpClient();
+    ResponseData? data;
+
+    final stopwatch = Stopwatch()..start();
 
     try {
       var methodMapping = <String, dynamic>{
@@ -181,20 +187,18 @@ class RequestController extends ChangeNotifier {
       loading = true;
       notifyListeners();
 
-      request.close().then((res) async {
+      await request.close().then((res) async {
         if (res.statusCode == 200) {
-          String body = await res.transform(utf8.decoder).join();
+          data = ResponseData(response: res);
 
-          response = JsonView.string(
-            body,
-            theme: JsonViewTheme(
-              defaultTextStyle: TextStyle(fontSize: 12.5),
-              backgroundColor: Colors.transparent,
-              keyStyle: TextStyle(color: const Color.fromARGB(255, 109, 188, 224)),
-              intStyle: TextStyle(color: const Color.fromARGB(255, 111, 184, 114)),
-              stringStyle: TextStyle(color: const Color.fromARGB(255, 201, 129, 96)),
-            ),
-          );
+          if (res.headers['content-type']![0].contains('application/json')) {
+            String body = await res.transform(utf8.decoder).join();
+            data!.isJson = true;
+            data!.body = body;
+          } else {
+            String body = await res.transform(latin1.decoder).join();
+            data!.body = body;
+          }
 
           loading = false;
           notifyListeners();
@@ -205,16 +209,16 @@ class RequestController extends ChangeNotifier {
     } catch (e) {
       print('Exception: $e');
     } finally {
+      stopwatch.stop();
+      loading = false;
+
+      if (data != null) {
+        data!.elapsedTime = stopwatch.elapsedMilliseconds;
+        responseData = data;
+      }
+
       httpClient.close();
+      notifyListeners();
     }
   }
-}
-
-class ProjectData {
-  Project project;
-  List<Request> requests;
-  bool isExpanded = false;
-  bool isRenaming = false;
-
-  ProjectData({required this.project, required this.requests});
 }

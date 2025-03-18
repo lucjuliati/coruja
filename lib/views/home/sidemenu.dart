@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../components/cancel_button.dart';
 import '../../components/input.dart';
-import '../../components/label.dart';
 import '../../components/select.dart';
 import '../../controllers/request.dart';
 import '../../database/database.dart';
@@ -110,7 +109,16 @@ class _SideMenuState extends State<SideMenu> {
                       style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
                     ),
                     const SizedBox(height: 15),
-                    Input(label: 'Name', controller: name),
+                    Input(
+                      label: 'Name',
+                      controller: name,
+                      onSubmitted: (value) {
+                        if (selectedProject != null) {
+                          widget.controller.createRequest(name: name.text, project: selectedProject!);
+                          Navigator.of(context).pop();
+                        }
+                      },
+                    ),
                     const SizedBox(height: 8),
                     Select(
                       label: 'Project',
@@ -148,7 +156,6 @@ class _SideMenuState extends State<SideMenu> {
   }
 
   void newProjectDialog() {
-    ThemeData theme = Theme.of(context);
     var name = TextEditingController();
 
     showDialog(
@@ -167,23 +174,14 @@ class _SideMenuState extends State<SideMenu> {
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
                 ),
                 const SizedBox(height: 15),
-                const Label(text: 'Name'),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
-                  child: TextField(
-                    controller: name,
-                    autofocus: true,
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: theme.inputDecorationTheme.fillColor,
-                      border: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                      enabledBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Colors.transparent),
-                      ),
-                    ),
-                    style: TextStyle(fontSize: 14),
-                  ),
+                Input(
+                  label: 'Name',
+                  controller: name,
+                  autofocus: true,
+                  onSubmitted: (value) {
+                    widget.controller.createProject(name: name.text);
+                    Navigator.of(context).pop();
+                  },
                 ),
                 const SizedBox(height: 40),
                 Row(
@@ -401,10 +399,7 @@ class _SideMenuState extends State<SideMenu> {
                                     children: [
                                       Opacity(
                                         opacity: 0.8,
-                                        child: Text(
-                                          request.name,
-                                          style: TextStyle(fontSize: 13),
-                                        ),
+                                        child: Text(request.name, style: TextStyle(fontSize: 13)),
                                       ),
                                       Text(
                                         request.method!.toUpperCase(),

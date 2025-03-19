@@ -1,0 +1,16 @@
+<html>
+
+<body style="background-color: #202023">
+    <div id="json-container"></div>
+    <script>
+        document.addEventListener('wheel', (event) => {
+            event.preventDefault()
+            window.scrollBy({
+                top: event.deltaY * 0.25,
+                behavior: 'smooth'
+            })
+        }, { passive: false })
+    </script>
+</body>
+
+</html>

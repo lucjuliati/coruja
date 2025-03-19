@@ -1,12 +1,10 @@
-import 'dart:io';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:flutter/services.dart';
 
+import '../../../components/dialog_manager.dart';
 import '../../../controllers/request.dart';
-
-WebViewEnvironment? webViewEnvironment;
+import '../../../models/request_data.dart';
 
 class ResponseBody extends StatefulWidget {
   final RequestController controller;
@@ -18,20 +16,14 @@ class ResponseBody extends StatefulWidget {
 }
 
 class _ResponseBodyState extends State<ResponseBody> {
-  @override
-  void initState() {
-    super.initState();
-
-    WebViewEnvironment.create(settings: WebViewEnvironmentSettings()).then((value) {
-      webViewEnvironment = value;
-    });
-  }
-
   Widget renderResponseItem({String? label, dynamic value, Color? color}) {
     return Row(
       spacing: 4,
       children: [
-        Opacity(opacity: 0.85, child: Text(label!, style: TextStyle(fontSize: 13))),
+        Opacity(
+          opacity: 0.85,
+          child: Text(label!, style: TextStyle(fontSize: 13)),
+        ),
         Text(
           value!,
           style: TextStyle(color: color, fontWeight: FontWeight.w500, fontSize: 13),
@@ -53,22 +45,10 @@ class _ResponseBodyState extends State<ResponseBody> {
   @override
   Widget build(BuildContext context) {
     ThemeData theme = Theme.of(context);
+    ResponseData? response = widget.controller.responseData;
 
     return Builder(
       builder: (context) {
-        if (widget.controller.loading) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: SizedBox(
-                height: 30,
-                width: 30,
-                child: CircularProgressIndicator(),
-              ),
-            ),
-          );
-        }
-
         if (widget.controller.responseData != null) {
           return Expanded(
             child: Container(
@@ -86,59 +66,38 @@ class _ResponseBodyState extends State<ResponseBody> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        if (widget.controller.responseData != null)
+                        if (response != null)
                           Row(
                             spacing: 12,
                             children: [
                               renderResponseItem(
                                 label: 'Status:',
-                                value: widget.controller.responseData!.response.statusCode.toString(),
-                                color: statusColorLogic(widget.controller.responseData!.response.statusCode),
-                              ),
-                              renderResponseItem(
-                                label: 'Length:',
-                                value: '${widget.controller.responseData!.response.contentLength}',
+                                value: response.response.statusCode.toString(),
+                                color: statusColorLogic(response.response.statusCode),
                               ),
                               renderResponseItem(
                                 label: 'Time:',
-                                value: '${widget.controller.responseData!.elapsedTime}ms',
+                                value: '${response.elapsedTime}ms',
                               ),
                             ],
                           ),
-                        IconButton(onPressed: () {}, icon: Icon(CupertinoIcons.crop)),
+                        Opacity(
+                          opacity: 0.85,
+                          child: IconButton(
+                            onPressed: () {
+                              Clipboard.setData(ClipboardData(text: response!.body!)).then((_) {
+                                if (!context.mounted) return;
+
+                                DialogManager(context).showSnackBar(title: 'Copied to clipboard!');
+                              });
+                            },
+                            icon: Icon(CupertinoIcons.crop, size: 20),
+                          ),
+                        ),
                       ],
                     ),
                   ),
-                  Expanded(
-                    child: Builder(
-                      builder: (context) {
-                        String initialData = '<html><body><div id="json-container"></div></body></html>';
-
-                        if (!widget.controller.responseData!.isJson) {
-                          initialData = widget.controller.responseData!.body!;
-                        }
-
-                        return InAppWebView(
-                          webViewEnvironment: webViewEnvironment,
-                          onLoadStop: (controller, url) async {
-                            if (!widget.controller.responseData!.isJson) return;
-
-                            String string = await File('lib/assets/jsonViewer.js').readAsString();
-
-                            var result = await controller.evaluateJavascript(
-                              source: 'let jsonData = ${widget.controller.responseData!.body}; $string',
-                            );
-
-                            if (result.runtimeType.toString() != 'Null') {
-                              print('OK');
-                            }
-                          },
-                          initialSettings: InAppWebViewSettings(allowsBackForwardNavigationGestures: false, javaScriptEnabled: true),
-                          initialData: InAppWebViewInitialData(data: initialData),
-                        );
-                      },
-                    ),
-                  ),
+                  if (response != null) Expanded(child: response.widget ?? Container()),
                 ],
               ),
             ),

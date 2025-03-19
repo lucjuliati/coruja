@@ -1,3 +1,4 @@
+import 'package:coruja/components/app_menu.dart';
 import 'package:flutter/material.dart';
 
 import '../../controllers/request.dart';
@@ -26,11 +27,18 @@ class _HomeState extends State<Home> {
       body: ListenableBuilder(
         listenable: controller,
         builder: (context, child) {
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+          return Column(
             children: [
-              SideMenu(controller: controller),
-              RequestInterface(controller: controller),
+              AppMenu(),
+              Expanded(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    SideMenu(controller: controller),
+                    RequestInterface(controller: controller),
+                  ],
+                ),
+              ),
             ],
           );
         },

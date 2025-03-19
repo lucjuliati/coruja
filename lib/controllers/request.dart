@@ -3,7 +3,9 @@ import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
+import '../components/dialog_manager.dart';
 import '../database/database.dart';
 import '../models/project_data.dart';
 import '../models/request_data.dart';
@@ -23,15 +25,12 @@ class RequestController extends ChangeNotifier {
   Request? selectedRequest;
   List<Project> projects = [];
   List<Request> requests = [];
-  Widget? response;
-  String? jsonResponse;
   bool loading = false;
   var projectData = <int, ProjectData>{};
   ResponseData? responseData;
   int tabIndex = 0;
 
   void select(Request request) {
-    response = null;
     selectedRequest = null;
     responseData = null;
     notifyListeners();
@@ -107,11 +106,6 @@ class RequestController extends ChangeNotifier {
     }
   }
 
-  void clearResponse() {
-    response = null;
-    notifyListeners();
-  }
-
   Future<List<Project>> getProjects() async {
     projects = (await db.select(db.projects).get());
     projectData = {};
@@ -171,49 +165,84 @@ class RequestController extends ChangeNotifier {
     HttpClient httpClient = HttpClient();
     ResponseData? data;
 
-    final stopwatch = Stopwatch()..start();
+    responseData = null;
+    notifyListeners();
 
     try {
-      var methodMapping = <String, dynamic>{
-        'GET': await httpClient.getUrl(address),
-        'POST': await httpClient.postUrl(address),
-        'PATCH': await httpClient.patchUrl(address),
-        'PUT': await httpClient.putUrl(address),
-        'DELETE': await httpClient.deleteUrl(address),
+      var methodMapping = <String, Future<HttpClientRequest> Function()>{
+        'GET': () => httpClient.getUrl(address),
+        'POST': () => httpClient.postUrl(address),
+        'PATCH': () => httpClient.patchUrl(address),
+        'PUT': () => httpClient.putUrl(address),
+        'DELETE': () => httpClient.deleteUrl(address),
       };
 
-      HttpClientRequest request = methodMapping[method.toUpperCase()];
+      if (!methodMapping.containsKey(method)) {
+        DialogManager(context).showSnackBar(title: 'Invalid HTTP method!');
+        return;
+      }
+
+      HttpClientRequest request = await methodMapping[method.toUpperCase()]!();
 
       loading = true;
       notifyListeners();
 
+      final stopwatch = Stopwatch()..start();
       await request.close().then((res) async {
+        stopwatch.stop();
+
+        data = ResponseData(response: res);
+        data!.elapsedTime = stopwatch.elapsedMilliseconds;
+
         if (res.statusCode == 200) {
-          data = ResponseData(response: res);
+          String initialData = await File('lib/assets/index.html').readAsString();
+          String? body;
 
           if (res.headers['content-type']![0].contains('application/json')) {
-            String body = await res.transform(utf8.decoder).join();
+            body = await res.transform(utf8.decoder).join();
             data!.isJson = true;
             data!.body = body;
           } else {
-            String body = await res.transform(latin1.decoder).join();
+            body = await res.transform(latin1.decoder).join();
             data!.body = body;
           }
 
-          loading = false;
-          notifyListeners();
+          if (data!.isJson == false) {
+            initialData = body;
+          }
+
+          data!.widget = Container(
+            color: Colors.transparent,
+            child: InAppWebView(
+              onLoadStop: (controller, url) async {
+                if (!data!.isJson) return;
+
+                String fileContents = await File('lib/assets/jsonViewer.js').readAsString();
+
+                await controller.evaluateJavascript(
+                  source: 'let jsonData = $body; $fileContents',
+                );
+              },
+              initialSettings: InAppWebViewSettings(
+                allowsBackForwardNavigationGestures: false,
+                javaScriptEnabled: true,
+              ),
+              initialData: InAppWebViewInitialData(data: initialData),
+            ),
+          );
         } else {
           print('Error: HTTP ${res.statusCode}');
         }
+
+        loading = false;
+        notifyListeners();
       });
     } catch (e) {
       print('Exception: $e');
     } finally {
-      stopwatch.stop();
       loading = false;
 
       if (data != null) {
-        data!.elapsedTime = stopwatch.elapsedMilliseconds;
         responseData = data;
       }
 

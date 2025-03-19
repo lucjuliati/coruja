@@ -5,7 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
-import '../../components/param_tab.dart';
+import '../../components/dialog_manager.dart';
+import '../../components/extra_tabs.dart';
 import '../../controllers/request.dart';
 import 'components/response_body.dart';
 
@@ -107,6 +108,8 @@ class _RequestInterfaceState extends State<RequestInterface> {
   }
 
   void send() {
+    if (widget.controller.loading) return;
+
     save();
 
     final RegExp urlRegex = RegExp(
@@ -119,36 +122,7 @@ class _RequestInterfaceState extends State<RequestInterface> {
     );
 
     if (!urlRegex.hasMatch(url.text)) {
-      ScaffoldMessenger.of(context).clearSnackBars();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          content: Align(
-            alignment: Alignment.bottomRight,
-            child: Container(
-              width: 350,
-              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
-              decoration: BoxDecoration(
-                color: Theme.of(context).secondaryHeaderColor.withValues(alpha: 0.4),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Row(
-                spacing: 8,
-                children: [
-                  Icon(Icons.close),
-                  Text(
-                    'Invalid URL!',
-                    style: TextStyle(color: Theme.of(context).textTheme.bodySmall!.color),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
-
+      DialogManager(context).showSnackBar(title: 'Invalid URL!');
       return;
     } else {
       widget.controller.send(url: url.text, method: selectedMethod!.label);
@@ -200,7 +174,9 @@ class _RequestInterfaceState extends State<RequestInterface> {
                                     decoration: InputDecoration(
                                       contentPadding: const EdgeInsets.only(bottom: 4),
                                       constraints: BoxConstraints(maxHeight: 36),
-                                      enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: theme.dividerColor, width: 1.5)),
+                                      enabledBorder: UnderlineInputBorder(
+                                        borderSide: BorderSide(color: theme.dividerColor, width: 1.5),
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -336,8 +312,7 @@ class _RequestInterfaceState extends State<RequestInterface> {
                     ],
                   ),
                 ),
-                ParamTabs(controller: widget.controller),
-                const SizedBox(height: 120),
+                ExtraTabs(controller: widget.controller),
                 ResponseBody(controller: widget.controller),
               ],
             ),

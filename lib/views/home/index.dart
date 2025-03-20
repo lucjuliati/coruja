@@ -1,6 +1,6 @@
-import 'package:coruja/components/app_menu.dart';
 import 'package:flutter/material.dart';
 
+import '../../components/app_menu.dart';
 import '../../controllers/request.dart';
 import 'request_interface.dart';
 import 'sidemenu.dart';

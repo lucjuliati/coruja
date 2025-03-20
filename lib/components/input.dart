@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'label.dart';
 
@@ -7,12 +8,14 @@ class Input extends StatelessWidget {
   final Function(String)? onSubmitted;
   final String? label;
   final bool autofocus;
+  final int? maxLength;
 
   const Input({
     super.key,
     this.label,
     this.onSubmitted,
     required this.controller,
+    this.maxLength,
     this.autofocus = false,
   });
 
@@ -29,6 +32,8 @@ class Input extends StatelessWidget {
           child: TextField(
             controller: controller,
             autofocus: autofocus,
+            maxLength: maxLength,
+            maxLengthEnforcement: MaxLengthEnforcement.enforced,
             onSubmitted: (value) {
               onSubmitted!(value);
             },
@@ -72,13 +77,13 @@ class ParamInput extends StatelessWidget {
         onSubmitted!(value);
       },
       style: TextStyle(
-        fontSize: 13,
+        fontSize: 12,
         color: theme.textTheme.bodyMedium!.color!.withValues(alpha: 0.8),
         fontWeight: FontWeight.w300,
       ),
       decoration: InputDecoration(
         contentPadding: const EdgeInsets.only(bottom: 4, right: 6, left: 6),
-        constraints: BoxConstraints(maxHeight: 36),
+        constraints: BoxConstraints(maxHeight: 32),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(2),
           borderSide: BorderSide(color: theme.dividerColor, width: 1.5),

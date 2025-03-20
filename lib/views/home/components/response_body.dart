@@ -1,8 +1,9 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../../../components/dialog_manager.dart';
+import '../../../components/resizable.dart';
 import '../../../controllers/request.dart';
 import '../../../models/request_data.dart';
 
@@ -50,7 +51,8 @@ class _ResponseBodyState extends State<ResponseBody> {
     return Builder(
       builder: (context) {
         if (widget.controller.responseData != null) {
-          return Expanded(
+          return ResizableWidget(
+            maxHeight: MediaQuery.of(context).size.height / 2,
             child: Container(
               decoration: BoxDecoration(
                 border: Border(top: BorderSide(color: theme.dividerColor)),
@@ -62,9 +64,10 @@ class _ResponseBodyState extends State<ResponseBody> {
               child: Column(
                 children: [
                   Padding(
-                    padding: const EdgeInsets.only(left: 12, bottom: 5),
+                    padding: const EdgeInsets.only(left: 12),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         if (response != null)
                           Row(
@@ -91,7 +94,7 @@ class _ResponseBodyState extends State<ResponseBody> {
                                 DialogManager(context).showSnackBar(title: 'Copied to clipboard!');
                               });
                             },
-                            icon: Icon(CupertinoIcons.crop, size: 20),
+                            icon: FaIcon(FontAwesomeIcons.copy, size: 19),
                           ),
                         ),
                       ],

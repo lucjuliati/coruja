@@ -9,6 +9,7 @@ import '../components/dialog_manager.dart';
 import '../database/database.dart';
 import '../models/project_data.dart';
 import '../models/request_data.dart';
+import 'params.dart';
 
 class RequestController extends ChangeNotifier {
   RequestController._internal();
@@ -81,9 +82,11 @@ class RequestController extends ChangeNotifier {
 
   Future<void> createRequest({String? name, String? method, required int project}) async {
     try {
+      if (name!.length < 5) throw ErrorDescription('InvalidLength');
+
       await db.into(db.requests).insert(
             RequestsCompanion.insert(
-              name: name ?? 'New Request',
+              name: name,
               method: Value('get'),
               project: Value(project),
             ),
@@ -91,6 +94,12 @@ class RequestController extends ChangeNotifier {
 
       getRequests(projectData[project]!.project.id);
     } catch (err) {
+      if (err == 'InvalidLength') {
+        if (context.mounted) {
+          DialogManager(context).showSnackBar(title: 'Request name must have at least 5 characters!');
+        }
+      }
+
       debugPrint(err.toString());
     }
   }
@@ -163,10 +172,15 @@ class RequestController extends ChangeNotifier {
   Future<void> send({required String url, required String method}) async {
     Uri address = Uri.parse(url);
     HttpClient httpClient = HttpClient();
+    var paramsController = ParamsController();
     ResponseData? data;
 
     responseData = null;
     notifyListeners();
+
+    List<Map<String, String>> headers = paramsController.headers.map((h) => h.toMap()).toList();
+
+    print(headers);
 
     try {
       var methodMapping = <String, Future<HttpClientRequest> Function()>{
@@ -183,6 +197,12 @@ class RequestController extends ChangeNotifier {
       }
 
       HttpClientRequest request = await methodMapping[method.toUpperCase()]!();
+
+      for (var header in headers) {
+        if (header['key']!.isNotEmpty && header['value']!.isNotEmpty) {
+          request.headers.set(header['key']!, header['value']!);
+        }
+      }
 
       loading = true;
       notifyListeners();

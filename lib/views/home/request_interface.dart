@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../../components/dialog_manager.dart';
 import '../../components/extra_tabs.dart';
@@ -193,11 +194,8 @@ class _RequestInterfaceState extends State<RequestInterface> {
                               child: Row(
                                 spacing: 7,
                                 children: [
-                                  Icon(CupertinoIcons.floppy_disk, size: 18, color: Colors.white),
-                                  Text(
-                                    'Save',
-                                    style: TextStyle(color: Colors.white),
-                                  ),
+                                  FaIcon(FontAwesomeIcons.floppyDisk, size: 18, color: Colors.white),
+                                  Text('Save', style: TextStyle(color: Colors.white)),
                                 ],
                               ),
                             ),

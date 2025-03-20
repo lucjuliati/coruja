@@ -16,15 +16,19 @@ class DialogManager {
           alignment: Alignment.bottomRight,
           child: Container(
             width: 350,
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
             decoration: BoxDecoration(
               color: Theme.of(context).secondaryHeaderColor.withValues(alpha: 0.4),
               borderRadius: BorderRadius.circular(4),
             ),
             child: Row(
-              spacing: 8,
+              spacing: 5,
               children: [
-                IconButton(onPressed: Navigator.of(context).pop, icon: Icon(Icons.close)),
+                IconButton(
+                  onPressed: () => ScaffoldMessenger.of(context).clearSnackBars(),
+                  icon: Icon(Icons.close, size: 20),
+                  splashRadius: 15,
+                ),
                 Text(
                   title,
                   style: TextStyle(color: Theme.of(context).textTheme.bodySmall!.color),

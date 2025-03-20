@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 class QueryParam {
@@ -11,4 +10,8 @@ class QueryParam {
     required this.value,
     this.enabled = true,
   });
+
+  Map<String, String> toMap() {
+    return <String, String>{'key': key.text, 'value': value.text};
+  }
 }

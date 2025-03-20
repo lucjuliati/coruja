@@ -4,6 +4,13 @@ import 'package:flutter/services.dart';
 class AppMenu extends StatelessWidget {
   const AppMenu({super.key});
 
+  Text menuFormatter(String label) {
+    return Text(
+      label,
+      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     ThemeData theme = Theme.of(context);
@@ -26,15 +33,12 @@ class AppMenu extends StatelessWidget {
               ),
               children: [
                 SubmenuButton(
-                  menuStyle: MenuStyle(
-                    visualDensity: VisualDensity(horizontal: 0.2, vertical: 0)
-                  ),
                   menuChildren: [
                     MenuItemButton(
                       onPressed: () {
                         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Saved!')));
                       },
-                      child: const MenuAcceleratorLabel('&New'),
+                      child: MenuAcceleratorLabel('&New'),
                     ),
                     MenuItemButton(
                       onPressed: () {
@@ -47,7 +51,10 @@ class AppMenu extends StatelessWidget {
                       child: const MenuAcceleratorLabel('&Exit'),
                     ),
                   ],
-                  child: const MenuAcceleratorLabel('&File'),
+                  child: MenuAcceleratorLabel(
+                    '&File',
+                    builder: (context, label, index) => menuFormatter(label),
+                  ),
                 ),
                 SubmenuButton(
                   menuChildren: [
@@ -62,7 +69,10 @@ class AppMenu extends StatelessWidget {
                       child: const MenuAcceleratorLabel('&About'),
                     ),
                   ],
-                  child: const MenuAcceleratorLabel('&Help'),
+                  child: MenuAcceleratorLabel(
+                    '&Help',
+                    builder: (context, label, index) => menuFormatter(label),
+                  ),
                 ),
               ],
             ),

@@ -98,54 +98,57 @@ class _SideMenuState extends State<SideMenu> {
               }
 
               return Container(
-                height: 310,
+                height: 330,
                 width: MediaQuery.of(context).size.width * 0.4,
                 padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'New Request',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
-                    ),
-                    const SizedBox(height: 15),
-                    Input(
-                      label: 'Name',
-                      controller: name,
-                      onSubmitted: (value) {
-                        if (selectedProject != null) {
-                          widget.controller.createRequest(name: name.text, project: selectedProject!);
-                          Navigator.of(context).pop();
-                        }
-                      },
-                    ),
-                    const SizedBox(height: 8),
-                    Select(
-                      label: 'Project',
-                      items: menuItems,
-                      onChanged: (value) => setState(() {
-                        selectedProject = value;
-                      }),
-                      value: selectedProject,
-                    ),
-                    const SizedBox(height: 40),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      spacing: 6,
-                      children: [
-                        CancelButton(onPressed: Navigator.of(context).pop),
-                        FilledButton(
-                          onPressed: selectedProject != null
-                              ? () {
-                                  widget.controller.createRequest(name: name.text, project: selectedProject!);
-                                  Navigator.of(context).pop();
-                                }
-                              : null,
-                          child: Text('Create'),
-                        ),
-                      ],
-                    ),
-                  ],
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'New Request',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
+                      ),
+                      const SizedBox(height: 15),
+                      Input(
+                        label: 'Name',
+                        controller: name,
+                        maxLength: 64,
+                        onSubmitted: (value) {
+                          if (selectedProject != null) {
+                            widget.controller.createRequest(name: name.text, project: selectedProject!);
+                            Navigator.of(context).pop();
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                      Select(
+                        label: 'Project',
+                        items: menuItems,
+                        onChanged: (value) => setState(() {
+                          selectedProject = value;
+                        }),
+                        value: selectedProject,
+                      ),
+                      const SizedBox(height: 40),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        spacing: 6,
+                        children: [
+                          CancelButton(onPressed: Navigator.of(context).pop),
+                          FilledButton(
+                            onPressed: selectedProject != null
+                                ? () {
+                                    widget.controller.createRequest(name: name.text, project: selectedProject!);
+                                    Navigator.of(context).pop();
+                                  }
+                                : null,
+                            child: Text('Create'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               );
             },

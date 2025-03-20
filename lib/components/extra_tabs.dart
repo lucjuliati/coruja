@@ -1,8 +1,10 @@
-import '../controllers/params.dart';
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
+import '../controllers/params.dart';
 import '../controllers/request.dart';
 import 'input.dart';
+import 'param_checkbox.dart';
 
 class ExtraTabs extends StatefulWidget {
   final RequestController controller;
@@ -24,8 +26,8 @@ class _ExtraTabsState extends State<ExtraTabs> {
     setState(() {
       children = [
         ParamTab(controller: paramController),
-        HeadersTab(),
-        BodyTab(),
+        HeadersTab(controller: paramController),
+        BodyTab(controller: paramController),
       ];
     });
   }
@@ -72,17 +74,19 @@ class _ExtraTabsState extends State<ExtraTabs> {
       );
     }
 
-    return Padding(
-      padding: const EdgeInsets.only(left: 12, right: 12, bottom: 16),
-      child: SingleChildScrollView(
-        child: Column(
-          children: [
-            Row(children: items),
-            Padding(
-              padding: const EdgeInsets.only(top: 10),
-              child: children[widget.controller.tabIndex],
-            ),
-          ],
+    return Expanded(
+      child: Padding(
+        padding: const EdgeInsets.only(left: 12, right: 12, bottom: 16),
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              Row(children: items),
+              Padding(
+                padding: const EdgeInsets.only(top: 10),
+                child: children[widget.controller.tabIndex],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -108,21 +112,27 @@ class ParamTab extends StatelessWidget {
             color: theme.textTheme.bodyMedium!.color!.withValues(alpha: 0.75),
           );
 
-          for (final param in controller.params) {
+          for (final (index, param) in controller.params.indexed) {
             rows.add(
               TableRow(
-                children: <Widget>[
+                children: [
                   Container(
-                    width: 32,
                     margin: const EdgeInsets.only(right: 7),
-                    child: Checkbox(value: param.enabled, onChanged: (value) {}),
+                    child: ParamCheckbox(
+                      value: param.enabled,
+                      onChanged: (value) => controller.toggleVisibility('params', index),
+                    ),
                   ),
                   Container(
                     padding: const EdgeInsets.only(right: 8),
                     child: ParamInput(controller: param.key),
                   ),
                   ParamInput(controller: param.value),
-                  IconButton(onPressed: () {}, icon: Icon(Icons.delete)),
+                  IconButton(
+                    onPressed: () => controller.deleteResource('params', index),
+                    icon: FaIcon(FontAwesomeIcons.trash, size: 16),
+                  ),
+                  
                 ],
               ),
             );
@@ -145,7 +155,10 @@ class ParamTab extends StatelessWidget {
                     Container(),
                     Text('Key', style: headerStyle),
                     Text('Value', style: headerStyle),
-                    IconButton(onPressed: controller.addNewParam, icon: Icon(Icons.add)),
+                    IconButton(
+                      onPressed: () => controller.addResource('params'),
+                      icon: Icon(Icons.add),
+                    ),
                   ],
                 ),
                 ...rows,
@@ -159,19 +172,104 @@ class ParamTab extends StatelessWidget {
 }
 
 class HeadersTab extends StatelessWidget {
-  const HeadersTab({super.key});
+  final ParamsController controller;
+
+  const HeadersTab({super.key, required this.controller});
 
   @override
   Widget build(BuildContext context) {
-    return const Text('Headers');
+    ThemeData theme = Theme.of(context);
+
+    return ListenableBuilder(
+      listenable: controller,
+      builder: (context, child) => Builder(
+        builder: (context) {
+          List<TableRow> rows = [];
+          TextStyle headerStyle = TextStyle(
+            fontSize: 13,
+            color: theme.textTheme.bodyMedium!.color!.withValues(alpha: 0.75),
+          );
+
+          for (final (index, header) in controller.headers.indexed) {
+            rows.add(
+              TableRow(
+                children: [
+                  Container(
+                    margin: const EdgeInsets.only(right: 7),
+                    child: ParamCheckbox(
+                      value: header.enabled,
+                      onChanged: (value) => controller.toggleVisibility('headers', index),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: ParamInput(controller: header.key),
+                  ),
+                  ParamInput(controller: header.value),
+                  IconButton(
+                    onPressed: () => controller.deleteResource('headers', index),
+                    icon: FaIcon(FontAwesomeIcons.trash, size: 16),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          return Container(
+            constraints: BoxConstraints(minHeight: 140),
+            child: Table(
+              border: TableBorder.all(color: Colors.transparent),
+              columnWidths: const <int, TableColumnWidth>{
+                0: IntrinsicColumnWidth(),
+                1: FlexColumnWidth(),
+                2: FlexColumnWidth(),
+                3: IntrinsicColumnWidth(),
+              },
+              defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+              children: [
+                TableRow(
+                  children: [
+                    Container(),
+                    Text('Key', style: headerStyle),
+                    Text('Value', style: headerStyle),
+                    IconButton(
+                      onPressed: () => controller.addResource('headers'),
+                      icon: Icon(Icons.add),
+                    ),
+                  ],
+                ),
+                ...rows,
+              ],
+            ),
+          );
+        },
+      ),
+    );
   }
 }
 
 class BodyTab extends StatelessWidget {
-  const BodyTab({super.key});
+  final ParamsController controller;
+
+  const BodyTab({super.key, required this.controller});
 
   @override
   Widget build(BuildContext context) {
-    return const Text('Body');
+    ThemeData theme = Theme.of(context);
+
+    return TextField(
+      minLines: 9,
+      maxLines: 9,
+      decoration: InputDecoration(
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(2),
+          borderSide: BorderSide(color: theme.dividerColor, width: 1.5),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(2),
+          borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.5),
+        ),
+      ),
+    );
   }
 }

@@ -9,6 +9,7 @@ import '../components/dialog_manager.dart';
 import '../database/database.dart';
 import '../models/project_data.dart';
 import '../models/request_data.dart';
+import '../utils/helper.dart';
 import 'params.dart';
 
 class RequestController extends ChangeNotifier {
@@ -21,7 +22,10 @@ class RequestController extends ChangeNotifier {
     return instance;
   }
 
+  var name = TextEditingController();
+  var url = TextEditingController();
   final db = AppDatabase();
+  ParamsManager? paramsManager;
   late BuildContext context;
   Request? selectedRequest;
   List<Project> projects = [];
@@ -34,14 +38,43 @@ class RequestController extends ChangeNotifier {
   void select(Request request) {
     selectedRequest = null;
     responseData = null;
-    notifyListeners();
     selectedRequest = request;
+    paramsManager = ParamsManager(request, this);
+    notifyListeners();
+  }
+
+  void forceUpdate() {
     notifyListeners();
   }
 
   void setTab(int index) {
     tabIndex = index;
     notifyListeners();
+  }
+
+  void findParams() {
+    Uri uri = Uri.parse(url.text);
+
+    for (var param in uri.queryParameters.entries) {
+      var found = Helper.findOrNull(paramsManager!.params, (p) => p.key.text == param.key);
+      if (found != null) {
+        found.value.text = param.value;
+      }
+    }
+  }
+
+  void changeParam() {
+    Map<String, dynamic> replaceMap = {};
+
+    for (var param in paramsManager!.params) {
+      if (param.key.text.isEmpty) continue;
+
+      replaceMap[param.key.text] = param.value.text;
+    }
+
+    Uri uri = Uri.parse(url.text);
+    var newUri = uri.replace(queryParameters: replaceMap);
+    url.text = newUri.toString();
   }
 
   void setProjectExpanded(int id) {
@@ -141,11 +174,15 @@ class RequestController extends ChangeNotifier {
 
   Future<void> saveRequest({String? name, String? url, String? method}) async {
     try {
+      List<Map> headersMap = paramsManager!.headers.map((p) => p.toMap()).toList();
+
       await db.update(db.requests).replace(
             selectedRequest!.copyWith(
               name: name ?? selectedRequest?.name,
               url: Value(url ?? selectedRequest?.url),
               method: Value(method ?? selectedRequest?.method),
+              body: Value(paramsManager?.body.text ?? ''),
+              headers: Value(json.encode(headersMap)),
             ),
           );
 
@@ -172,15 +209,12 @@ class RequestController extends ChangeNotifier {
   Future<void> send({required String url, required String method}) async {
     Uri address = Uri.parse(url);
     HttpClient httpClient = HttpClient();
-    var paramsController = ParamsController();
     ResponseData? data;
+    final stopwatch = Stopwatch();
+    var headers = paramsManager?.headers.where((h) => h.enabled).map((h) => h.toMap()).toList();
 
     responseData = null;
     notifyListeners();
-
-    List<Map<String, String>> headers = paramsController.headers.map((h) => h.toMap()).toList();
-
-    print(headers);
 
     try {
       var methodMapping = <String, Future<HttpClientRequest> Function()>{
@@ -198,16 +232,18 @@ class RequestController extends ChangeNotifier {
 
       HttpClientRequest request = await methodMapping[method.toUpperCase()]!();
 
-      for (var header in headers) {
-        if (header['key']!.isNotEmpty && header['value']!.isNotEmpty) {
-          request.headers.set(header['key']!, header['value']!);
+      if (headers != null) {
+        for (var header in headers) {
+          if (header['key']!.isNotEmpty && header['value']!.isNotEmpty) {
+            request.headers.set(header['key']!, header['value']!);
+          }
         }
       }
 
       loading = true;
       notifyListeners();
 
-      final stopwatch = Stopwatch()..start();
+      stopwatch.start();
       await request.close().then((res) async {
         stopwatch.stop();
 
@@ -259,6 +295,10 @@ class RequestController extends ChangeNotifier {
       });
     } catch (e) {
       print('Exception: $e');
+      stopwatch.stop();
+
+      data = ResponseData(response: null);
+      data!.elapsedTime = stopwatch.elapsedMilliseconds;
     } finally {
       loading = false;
 

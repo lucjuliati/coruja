@@ -3,11 +3,21 @@ import 'package:flutter/services.dart';
 
 class AppMenu extends StatelessWidget {
   const AppMenu({super.key});
-
+  
   Text menuFormatter(String label) {
     return Text(
       label,
       style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
+    );
+  }
+
+  MenuItemButton makeButton(BuildContext context, {required String label, required Function() onPressed}) {
+    return MenuItemButton(
+      onPressed: onPressed,
+      leadingIcon: SizedBox(width: 120, child: MenuAcceleratorLabel(label)),
+      style: MenuItemButton.styleFrom(
+        backgroundColor: Theme.of(context).secondaryHeaderColor.withValues(alpha: 0.5),
+      ),
     );
   }
 
@@ -34,22 +44,10 @@ class AppMenu extends StatelessWidget {
               children: [
                 SubmenuButton(
                   menuChildren: [
-                    MenuItemButton(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Saved!')));
-                      },
-                      child: MenuAcceleratorLabel('&New'),
-                    ),
-                    MenuItemButton(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Saved!')));
-                      },
-                      child: const MenuAcceleratorLabel('&Save'),
-                    ),
-                    MenuItemButton(
-                      onPressed: SystemNavigator.pop,
-                      child: const MenuAcceleratorLabel('&Exit'),
-                    ),
+                    makeButton(context, label: '&New', onPressed: () {}),
+                    makeButton(context, label: '&Save', onPressed: () {}),
+                    Divider(height: 0, color: Colors.black45),
+                    makeButton(context, label: '&Exit', onPressed: SystemNavigator.pop),
                   ],
                   child: MenuAcceleratorLabel(
                     '&File',
@@ -58,15 +56,14 @@ class AppMenu extends StatelessWidget {
                 ),
                 SubmenuButton(
                   menuChildren: [
-                    MenuItemButton(
-                      onPressed: () {
-                        showAboutDialog(
-                          context: context,
-                          applicationName: 'Coruja',
-                          applicationVersion: '1.0.0',
-                        );
-                      },
-                      child: const MenuAcceleratorLabel('&About'),
+                    makeButton(
+                      context,
+                      label: '&About',
+                      onPressed: () => showAboutDialog(
+                        context: context,
+                        applicationName: 'Coruja',
+                        applicationVersion: '1.0.0',
+                      ),
                     ),
                   ],
                   child: MenuAcceleratorLabel(

@@ -26,14 +26,18 @@ class _ResponseBodyState extends State<ResponseBody> {
           child: Text(label!, style: TextStyle(fontSize: 13)),
         ),
         Text(
-          value!,
+          value ?? 'Error',
           style: TextStyle(color: color, fontWeight: FontWeight.w500, fontSize: 13),
         ),
       ],
     );
   }
 
-  Color statusColorLogic(int statusCode) {
+  Color statusColorLogic(int? statusCode) {
+    if (statusCode == null) {
+      return const Color.fromARGB(255, 190, 72, 63);
+    }
+
     if (statusCode >= 200 && statusCode < 300) {
       return const Color.fromARGB(255, 85, 187, 88);
     } else if (statusCode >= 300 && statusCode < 400) {
@@ -75,8 +79,8 @@ class _ResponseBodyState extends State<ResponseBody> {
                             children: [
                               renderResponseItem(
                                 label: 'Status:',
-                                value: response.response.statusCode.toString(),
-                                color: statusColorLogic(response.response.statusCode),
+                                value: response.response?.statusCode.toString(),
+                                color: statusColorLogic(response.response?.statusCode),
                               ),
                               renderResponseItem(
                                 label: 'Time:',

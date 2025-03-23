@@ -1,15 +1,15 @@
+import 'dart:convert';
+
 import 'package:flutter/cupertino.dart';
 
+import '../database/database.dart';
 import '../models/query_param.dart';
+import 'request.dart';
 
-class ParamsController extends ChangeNotifier {
-  ParamsController._internal();
-
-  static final ParamsController instance = ParamsController._internal();
-
-  factory ParamsController() {
-    return instance;
-  }
+class ParamsManager {
+  late final RequestController controller;
+  final Request? request;
+  var body = TextEditingController();
 
   List<QueryParam> params = [
     QueryParam(
@@ -35,12 +35,55 @@ class ParamsController extends ChangeNotifier {
       value: TextEditingController(text: 'keep-alive'),
       enabled: true,
     ),
-    QueryParam(
-      key: TextEditingController(text: 'Authorization'),
-      value: TextEditingController(),
-      enabled: true,
-    ),
   ];
+
+  ParamsManager(this.request, this.controller) {
+    if (request != null) {
+      body.text = request!.body ?? '';
+      getHeaders(request!);
+      getParamsFromURL(request!);
+    }
+  }
+
+  void getHeaders(Request request) {
+    if (request.headers == null || request.headers!.isEmpty) return;
+
+    var headers = <QueryParam>[];
+
+    for (var header in json.decode(request.headers!)) {
+      headers.add(
+        QueryParam(
+          key: TextEditingController(text: header['key'] ?? ''),
+          value: TextEditingController(text: header['value'] ?? ''),
+          enabled: header['enabled'] ?? true,
+        ),
+      );
+    }
+
+    this.headers = headers;
+    controller.forceUpdate();
+  }
+
+  void getParamsFromURL(Request request) {
+    Uri uri = Uri.parse(request.url!);
+
+    if (uri.queryParameters.entries.isEmpty) return;
+
+    var params = <QueryParam>[];
+
+    for (var param in uri.queryParameters.entries) {
+      params.add(
+        QueryParam(
+          key: TextEditingController(text: param.key),
+          value: TextEditingController(text: param.value),
+          enabled: true,
+        ),
+      );
+    }
+
+    this.params = params;
+    controller.forceUpdate();
+  }
 
   void toggleVisibility(String type, int index) {
     if (type == 'params') {
@@ -49,7 +92,7 @@ class ParamsController extends ChangeNotifier {
       headers[index].enabled = !headers[index].enabled;
     }
 
-    notifyListeners();
+    controller.forceUpdate();
   }
 
   void deleteResource(String type, int index) {
@@ -59,7 +102,8 @@ class ParamsController extends ChangeNotifier {
       headers.removeAt(index);
     }
 
-    notifyListeners();
+    controller.forceUpdate();
+    Future.delayed(const Duration(milliseconds: 100), () => controller.changeParam());
   }
 
   void addResource(String type) {
@@ -75,6 +119,7 @@ class ParamsController extends ChangeNotifier {
       headers.add(newItem);
     }
 
-    notifyListeners();
+    controller.forceUpdate();
+    Future.delayed(const Duration(milliseconds: 100), () => controller.changeParam());
   }
 }

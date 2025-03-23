@@ -7,8 +7,8 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../../components/dialog_manager.dart';
-import '../../components/extra_tabs.dart';
 import '../../controllers/request.dart';
+import 'components/extra_tabs.dart';
 import 'components/response_body.dart';
 
 class RequestInterface extends StatefulWidget {
@@ -24,8 +24,7 @@ WebViewEnvironment? webViewEnvironment;
 
 class _RequestInterfaceState extends State<RequestInterface> {
   late int id;
-  var name = TextEditingController();
-  var url = TextEditingController();
+
   FocusNode urlFocus = FocusNode();
   FocusNode keyboardFocus = FocusNode();
   MethodLabel? selectedMethod = MethodLabel.get;
@@ -48,8 +47,8 @@ class _RequestInterfaceState extends State<RequestInterface> {
       selectedMethod = method;
     });
 
-    name.text = widget.controller.selectedRequest?.name ?? '';
-    url.text = widget.controller.selectedRequest?.url ?? '';
+    widget.controller.name.text = widget.controller.selectedRequest?.name ?? '';
+    widget.controller.url.text = widget.controller.selectedRequest?.url ?? '';
 
     keyboardFocus.requestFocus();
   }
@@ -59,12 +58,12 @@ class _RequestInterfaceState extends State<RequestInterface> {
 
     if (selected != null && id != selected.id) {
       Future.delayed(const Duration(milliseconds: 100), () {
-        if (name.text != selected.name) {
-          name.text = selected.name;
+        if (widget.controller.name.text != selected.name) {
+          widget.controller.name.text = selected.name;
         }
 
-        if (url.text != selected.url) {
-          url.text = selected.url ?? '';
+        if (widget.controller.url.text != selected.url) {
+          widget.controller.url.text = selected.url ?? '';
         }
       });
 
@@ -82,8 +81,6 @@ class _RequestInterfaceState extends State<RequestInterface> {
   @override
   void dispose() {
     super.dispose();
-    name.dispose();
-    url.dispose();
     widget.controller.removeListener(requestListener);
   }
 
@@ -102,8 +99,8 @@ class _RequestInterfaceState extends State<RequestInterface> {
 
   void save() {
     widget.controller.saveRequest(
-      name: name.text,
-      url: url.text,
+      name: widget.controller.name.text,
+      url: widget.controller.url.text,
       method: selectedMethod!.label,
     );
   }
@@ -122,11 +119,11 @@ class _RequestInterfaceState extends State<RequestInterface> {
       multiLine: false,
     );
 
-    if (!urlRegex.hasMatch(url.text)) {
+    if (!urlRegex.hasMatch(widget.controller.url.text)) {
       DialogManager(context).showSnackBar(title: 'Invalid URL!');
       return;
     } else {
-      widget.controller.send(url: url.text, method: selectedMethod!.label);
+      widget.controller.send(url: widget.controller.url.text, method: selectedMethod!.label);
     }
   }
 
@@ -169,9 +166,10 @@ class _RequestInterfaceState extends State<RequestInterface> {
                                 SizedBox(
                                   width: MediaQuery.of(context).size.width,
                                   child: TextField(
-                                    controller: name,
+                                    controller: widget.controller.name,
                                     cursorRadius: Radius.circular(12),
                                     style: TextStyle(fontSize: 13),
+                                    onSubmitted: (value) => save(),
                                     decoration: InputDecoration(
                                       contentPadding: const EdgeInsets.only(bottom: 4),
                                       constraints: BoxConstraints(maxHeight: 36),
@@ -252,8 +250,9 @@ class _RequestInterfaceState extends State<RequestInterface> {
                           ),
                           Expanded(
                             child: TextField(
-                              controller: url,
+                              controller: widget.controller.url,
                               focusNode: urlFocus,
+                              onChanged: (value) => widget.controller.findParams(),
                               decoration: InputDecoration(
                                 alignLabelWithHint: false,
                                 border: InputBorder.none,
@@ -280,7 +279,7 @@ class _RequestInterfaceState extends State<RequestInterface> {
                               ),
                               onSubmitted: (String value) {
                                 send();
-                                url.text = value;
+                                widget.controller.url.text = value;
                                 urlFocus.requestFocus();
                               },
                             ),

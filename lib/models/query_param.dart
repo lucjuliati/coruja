@@ -11,7 +11,11 @@ class QueryParam {
     this.enabled = true,
   });
 
-  Map<String, String> toMap() {
-    return <String, String>{'key': key.text, 'value': value.text};
+  Map<String, dynamic> toMap() {
+    return {
+      'key': key.text,
+      'value': value.text,
+      'enabled': enabled,
+    };
   }
 }

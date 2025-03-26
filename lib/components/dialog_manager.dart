@@ -40,4 +40,29 @@ class DialogManager {
       ),
     );
   }
+
+  void showModal({required String title, required String content}) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 22),
+        content: Container(
+          constraints: BoxConstraints(minHeight: 60),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                title,
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 10),
+              Text(content),
+              const SizedBox(height: 16),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

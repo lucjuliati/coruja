@@ -6,6 +6,7 @@ import 'label.dart';
 class Input extends StatelessWidget {
   final TextEditingController? controller;
   final Function(String)? onSubmitted;
+  final Function(String)? onChanged;
   final String? label;
   final bool autofocus;
   final int? maxLength;
@@ -14,6 +15,7 @@ class Input extends StatelessWidget {
     super.key,
     this.label,
     this.onSubmitted,
+    this.onChanged,
     required this.controller,
     this.maxLength,
     this.autofocus = false,
@@ -37,12 +39,17 @@ class Input extends StatelessWidget {
             onSubmitted: (value) {
               onSubmitted!(value);
             },
+            onChanged: (value) {
+              if (onChanged != null) onChanged!(value);
+            },
             style: TextStyle(fontSize: 14),
             decoration: InputDecoration(
               filled: true,
               fillColor: theme.inputDecorationTheme.fillColor,
               border: InputBorder.none,
-              focusedBorder: InputBorder.none,
+              focusedBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.transparent),
+              ),
               enabledBorder: OutlineInputBorder(
                 borderSide: BorderSide(color: Colors.transparent),
               ),

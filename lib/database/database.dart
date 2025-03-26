@@ -7,7 +7,7 @@ part 'database.g.dart';
 
 class Requests extends Table {
   IntColumn get id => integer().autoIncrement()();
-  TextColumn get name => text().withLength(min: 5, max: 64)();
+  TextColumn get name => text().withLength(min: 1, max: 64)();
   TextColumn get url => text().nullable()();
   TextColumn get method => text().nullable()();
   TextColumn get body => text().nullable()();
@@ -18,7 +18,7 @@ class Requests extends Table {
 
 class Projects extends Table {
   IntColumn get id => integer().autoIncrement()();
-  TextColumn get name => text().withLength(min: 3, max: 64)();
+  TextColumn get name => text().withLength(min: 1, max: 64)();
   TextColumn get variables => text().nullable()();
 }
 

@@ -1,9 +1,17 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+
+import '../controllers/request.dart';
+import '../utils/event_emitter.dart';
+
+EventEmitter emitter = EventEmitter();
 
 class AppMenu extends StatelessWidget {
-  const AppMenu({super.key});
-  
+  final RequestController controller;
+
+  const AppMenu({super.key, required this.controller});
+
   Text menuFormatter(String label) {
     return Text(
       label,
@@ -11,12 +19,17 @@ class AppMenu extends StatelessWidget {
     );
   }
 
-  MenuItemButton makeButton(BuildContext context, {required String label, required Function() onPressed}) {
+  MenuItemButton makeButton(
+    BuildContext context, {
+    required String label,
+    required Function() onPressed,
+    bool disabled = false,
+  }) {
     return MenuItemButton(
-      onPressed: onPressed,
+      onPressed: disabled ? null : onPressed,
       leadingIcon: SizedBox(width: 120, child: MenuAcceleratorLabel(label)),
       style: MenuItemButton.styleFrom(
-        backgroundColor: Theme.of(context).secondaryHeaderColor.withValues(alpha: 0.5),
+        backgroundColor: Theme.of(context).secondaryHeaderColor.withValues(alpha: 0.35),
       ),
     );
   }
@@ -30,6 +43,7 @@ class AppMenu extends StatelessWidget {
         border: Border(
           bottom: BorderSide(color: theme.dividerColor, width: 1.5),
         ),
+        color: theme.cardColor
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -44,10 +58,23 @@ class AppMenu extends StatelessWidget {
               children: [
                 SubmenuButton(
                   menuChildren: [
-                    makeButton(context, label: '&New', onPressed: () {}),
-                    makeButton(context, label: '&Save', onPressed: () {}),
+                    makeButton(
+                      context,
+                      label: '&New',
+                      onPressed: () => emitter.emit('new_resource'),
+                    ),
+                    makeButton(
+                      context,
+                      label: '&Save',
+                      onPressed: () => emitter.emit('save'),
+                      disabled: controller.selectedRequest == null,
+                    ),
                     Divider(height: 0, color: Colors.black45),
-                    makeButton(context, label: '&Exit', onPressed: SystemNavigator.pop),
+                    makeButton(
+                      context,
+                      label: '&Exit',
+                      onPressed: () => exit(0),
+                    ),
                   ],
                   child: MenuAcceleratorLabel(
                     '&File',

@@ -29,7 +29,7 @@ class _HomeState extends State<Home> {
         builder: (context, child) {
           return Column(
             children: [
-              AppMenu(),
+              AppMenu(controller: controller),
               Expanded(
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,

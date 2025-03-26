@@ -3,14 +3,15 @@ import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
 import '../components/dialog_manager.dart';
 import '../database/database.dart';
+import '../models/params_manager.dart';
 import '../models/project_data.dart';
 import '../models/request_data.dart';
 import '../utils/helper.dart';
-import 'params.dart';
 
 class RequestController extends ChangeNotifier {
   RequestController._internal();
@@ -19,6 +20,7 @@ class RequestController extends ChangeNotifier {
 
   factory RequestController(BuildContext context) {
     instance.context = context;
+
     return instance;
   }
 
@@ -72,9 +74,13 @@ class RequestController extends ChangeNotifier {
       replaceMap[param.key.text] = param.value.text;
     }
 
-    Uri uri = Uri.parse(url.text);
-    var newUri = uri.replace(queryParameters: replaceMap);
-    url.text = newUri.toString();
+    Uri newUri = Uri.parse(url.text).replace(queryParameters: replaceMap);
+
+    if (replaceMap.isEmpty) {
+      url.text = newUri.toString().replaceAll('?', '');
+    } else {
+      url.text = newUri.toString();
+    }
   }
 
   void setProjectExpanded(int id) {
@@ -93,19 +99,29 @@ class RequestController extends ChangeNotifier {
   }
 
   Future<void> deleteRequest(Request request) async {
-    await (db.delete(db.requests)..where((r) => r.id.equals(request.id))).go();
+    try {
+      await (db.delete(db.requests)..where((r) => r.id.equals(request.id))).go();
 
-    if (request.id == selectedRequest?.id) {
-      selectedRequest = null;
-      notifyListeners();
+      if (request.id == selectedRequest?.id) {
+        selectedRequest = null;
+        notifyListeners();
+      }
+
+      getRequests(request.project!);
+    } catch (err) {
+      debugPrint(err.toString());
     }
-
-    getRequests(request.project!);
   }
 
   Future<void> deleteProject(Project project) async {
-    await (db.delete(db.projects)..where((p) => p.id.equals(project.id))).go();
-    await getProjects();
+    try {
+      await (db.delete(db.requests)..where((r) => r.project.equals(project.id))).go();
+      await (db.delete(db.projects)..where((p) => p.id.equals(project.id))).go();
+
+      await getProjects();
+    } catch (err) {
+      debugPrint(err.toString());
+    }
   }
 
   void renameProject(Project project) {
@@ -113,11 +129,16 @@ class RequestController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> createRequest({String? name, String? method, required int project}) async {
-    try {
-      if (name!.length < 5) throw ErrorDescription('InvalidLength');
+  Future<bool> createRequest({String? name, String? method, required int project}) async {
+    bool status = false;
 
-      await db.into(db.requests).insert(
+    try {
+      if (name!.isEmpty || name.length > 64) {
+        DialogManager(context).showModal(title: 'Error', content: 'Invalid name length!');
+        throw ErrorDescription('InvalidLength');
+      }
+
+      int id = await db.into(db.requests).insert(
             RequestsCompanion.insert(
               name: name,
               method: Value('get'),
@@ -125,7 +146,9 @@ class RequestController extends ChangeNotifier {
             ),
           );
 
-      getRequests(projectData[project]!.project.id);
+      await getRequests(projectData[project]!.project.id, set: id);
+      setProjectExpanded(project);
+      status = true;
     } catch (err) {
       if (err == 'InvalidLength') {
         if (context.mounted) {
@@ -135,6 +158,8 @@ class RequestController extends ChangeNotifier {
 
       debugPrint(err.toString());
     }
+
+    return status;
   }
 
   Future<void> createProject({String? name}) async {
@@ -163,10 +188,15 @@ class RequestController extends ChangeNotifier {
     return projects;
   }
 
-  Future<List<Request>> getRequests(int projectId) async {
+  Future<List<Request>> getRequests(int projectId, {int? set}) async {
     var query = db.select(db.requests)..where((request) => request.project.equals(projectId));
     requests = await query.get();
     projectData[projectId]!.requests = requests;
+
+    if (set != null) {
+      var request = requests.firstWhere((r) => r.id == set);
+      select(request);
+    }
 
     notifyListeners();
     return requests;
@@ -213,7 +243,6 @@ class RequestController extends ChangeNotifier {
     final stopwatch = Stopwatch();
     var headers = paramsManager?.headers.where((h) => h.enabled).map((h) => h.toMap()).toList();
 
-    responseData = null;
     notifyListeners();
 
     try {
@@ -230,7 +259,7 @@ class RequestController extends ChangeNotifier {
         return;
       }
 
-      HttpClientRequest request = await methodMapping[method.toUpperCase()]!();
+      var request = await methodMapping[method.toUpperCase()]!();
 
       if (headers != null) {
         for (var header in headers) {
@@ -240,20 +269,23 @@ class RequestController extends ChangeNotifier {
         }
       }
 
+      if (['POST', 'PUT', 'PATCH'].contains(method.toUpperCase())) {
+        request.write(paramsManager!.body.text);
+      }
+
       loading = true;
       notifyListeners();
 
       stopwatch.start();
       await request.close().then((res) async {
+        String initialData = await rootBundle.loadString('lib/assets/index.html');
         stopwatch.stop();
 
         data = ResponseData(response: res);
         data!.elapsedTime = stopwatch.elapsedMilliseconds;
+        String? body;
 
         if (res.statusCode == 200) {
-          String initialData = await File('lib/assets/index.html').readAsString();
-          String? body;
-
           if (res.headers['content-type']![0].contains('application/json')) {
             body = await res.transform(utf8.decoder).join();
             data!.isJson = true;
@@ -266,29 +298,37 @@ class RequestController extends ChangeNotifier {
           if (data!.isJson == false) {
             initialData = body;
           }
-
-          data!.widget = Container(
-            color: Colors.transparent,
-            child: InAppWebView(
-              onLoadStop: (controller, url) async {
-                if (!data!.isJson) return;
-
-                String fileContents = await File('lib/assets/jsonViewer.js').readAsString();
-
-                await controller.evaluateJavascript(
-                  source: 'let jsonData = $body; $fileContents',
-                );
-              },
-              initialSettings: InAppWebViewSettings(
-                allowsBackForwardNavigationGestures: false,
-                javaScriptEnabled: true,
-              ),
-              initialData: InAppWebViewInitialData(data: initialData),
-            ),
-          );
         } else {
           print('Error: HTTP ${res.statusCode}');
+          body = await res.transform(latin1.decoder).join();
+          data!.body = body;
+          data!.isJson = false;
+
+          if (data!.body == '{}') {
+            initialData = '';
+          } else {
+            initialData = data!.body ?? '';
+          }
         }
+
+        data!.widget = Container(
+          color: Colors.transparent,
+          child: InAppWebView(
+            onLoadStop: (controller, url) async {
+              if (!data!.isJson) return;
+              String fileContents = await rootBundle.loadString('lib/assets/jsonViewer.js');
+
+              controller.evaluateJavascript(
+                source: 'let jsonData = $body; $fileContents',
+              );
+            },
+            initialSettings: InAppWebViewSettings(
+              allowsBackForwardNavigationGestures: false,
+              javaScriptEnabled: true,
+            ),
+            initialData: InAppWebViewInitialData(data: initialData),
+          ),
+        );
 
         loading = false;
         notifyListeners();

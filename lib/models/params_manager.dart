@@ -2,9 +2,9 @@ import 'dart:convert';
 
 import 'package:flutter/cupertino.dart';
 
+import '../controllers/request.dart';
 import '../database/database.dart';
-import '../models/query_param.dart';
-import 'request.dart';
+import 'query_param.dart';
 
 class ParamsManager {
   late final RequestController controller;
@@ -64,8 +64,10 @@ class ParamsManager {
     controller.forceUpdate();
   }
 
-  void getParamsFromURL(Request request) {
-    Uri uri = Uri.parse(request.url!);
+  void getParamsFromURL(Request? request) {
+    if (request == null) return;
+
+    Uri uri = Uri.parse(request.url ?? '');
 
     if (uri.queryParameters.entries.isEmpty) return;
 

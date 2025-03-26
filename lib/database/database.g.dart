@@ -28,7 +28,7 @@ class $ProjectsTable extends Projects with TableInfo<$ProjectsTable, Project> {
     aliasedName,
     false,
     additionalChecks: GeneratedColumn.checkTextLength(
-      minTextLength: 3,
+      minTextLength: 1,
       maxTextLength: 64,
     ),
     type: DriftSqlType.string,
@@ -297,7 +297,7 @@ class $RequestsTable extends Requests with TableInfo<$RequestsTable, Request> {
     aliasedName,
     false,
     additionalChecks: GeneratedColumn.checkTextLength(
-      minTextLength: 5,
+      minTextLength: 1,
       maxTextLength: 64,
     ),
     type: DriftSqlType.string,

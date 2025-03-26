@@ -272,6 +272,10 @@ class BodyTab extends StatelessWidget {
           minLines: 9,
           maxLines: 9,
           controller: paramsManager?.body,
+          style: TextStyle(
+            fontSize: 13,
+            color: theme.textTheme.bodyMedium!.color!.withValues(alpha: 0.85),
+          ),
           decoration: InputDecoration(
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(2),

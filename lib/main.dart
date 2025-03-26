@@ -1,18 +1,29 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:window_size/window_size.dart';
 
+import 'utils/log_error.dart';
 import 'views/home/index.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  runZonedGuarded(() {
+    WidgetsFlutterBinding.ensureInitialized();
 
-  if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
-    setWindowMinSize(const Size(800, 600));
-  }
+    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+      setWindowMinSize(const Size(800, 600));
+    }
 
-  runApp(const MyApp());
+    FlutterError.onError = (FlutterErrorDetails details) {
+      FlutterError.presentError(details);
+      logError(details.exceptionAsString(), details.stack);
+    };
+
+    runApp(const MyApp());
+  }, (error, stack) {
+    logError(error.toString(), stack);
+  });
 }
 
 class MyApp extends StatelessWidget {

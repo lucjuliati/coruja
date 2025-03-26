@@ -24,8 +24,9 @@ class Select<T> extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (label != null) Label(text: label!),
-        SizedBox(
+        Container(
           width: MediaQuery.of(context).size.width,
+          constraints: BoxConstraints(minHeight: 46),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(6),
             child: Material(
@@ -42,7 +43,7 @@ class Select<T> extends StatelessWidget {
                 ),
                 style: TextStyle(fontSize: 14),
                 value: value,
-                icon: const Icon(Icons.arrow_drop_down),
+                icon: items.isNotEmpty ? const Icon(Icons.arrow_drop_down) : Container(),
                 isExpanded: true,
                 items: items,
               ),

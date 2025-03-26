@@ -8,6 +8,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../../components/dialog_manager.dart';
 import '../../controllers/request.dart';
+import '../../utils/event_emitter.dart';
 import 'components/extra_tabs.dart';
 import 'components/response_body.dart';
 
@@ -25,6 +26,7 @@ WebViewEnvironment? webViewEnvironment;
 class _RequestInterfaceState extends State<RequestInterface> {
   late int id;
 
+  EventEmitter emitter = EventEmitter();
   FocusNode urlFocus = FocusNode();
   FocusNode keyboardFocus = FocusNode();
   MethodLabel? selectedMethod = MethodLabel.get;
@@ -49,6 +51,8 @@ class _RequestInterfaceState extends State<RequestInterface> {
 
     widget.controller.name.text = widget.controller.selectedRequest?.name ?? '';
     widget.controller.url.text = widget.controller.selectedRequest?.url ?? '';
+
+    emitter.on('save', (_) => save());
 
     keyboardFocus.requestFocus();
   }

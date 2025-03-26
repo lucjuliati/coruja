@@ -5,6 +5,7 @@ import '../../components/input.dart';
 import '../../components/select.dart';
 import '../../controllers/request.dart';
 import '../../database/database.dart';
+import '../../utils/event_emitter.dart';
 
 class SideMenu extends StatefulWidget {
   final RequestController controller;
@@ -16,6 +17,8 @@ class SideMenu extends StatefulWidget {
 }
 
 class _SideMenuState extends State<SideMenu> {
+  EventEmitter emitter = EventEmitter();
+
   final methodColor = <String, Color>{
     'GET': Color(0xFF59B156),
     'POST': Colors.orange,
@@ -28,6 +31,7 @@ class _SideMenuState extends State<SideMenu> {
   void initState() {
     super.initState();
     widget.controller.getProjects();
+    emitter.on('new_resource', (_) => newResourceDialog());
   }
 
   void newResourceDialog() {
@@ -89,69 +93,83 @@ class _SideMenuState extends State<SideMenu> {
       context: context,
       builder: (context) {
         return Dialog(
-          child: StatefulBuilder(
-            builder: (context, setState) {
-              List<DropdownMenuItem> menuItems = [];
+          child: FutureBuilder<List<Project>>(
+            future: widget.controller.getProjects(),
+            builder: (context, snapshot) => StatefulBuilder(
+              builder: (context, setState) {
+                if (snapshot.connectionState == ConnectionState.done) {
+                  List<DropdownMenuItem> menuItems = [];
 
-              for (var project in widget.controller.projects) {
-                menuItems.add(DropdownMenuItem(value: project.id, child: Text(project.name)));
-              }
+                  for (var project in snapshot.data ?? []) {
+                    menuItems.add(DropdownMenuItem(value: project.id, child: Text(project.name)));
+                  }
 
-              return Container(
-                height: 330,
-                width: MediaQuery.of(context).size.width * 0.4,
-                padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'New Request',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
-                      ),
-                      const SizedBox(height: 15),
-                      Input(
-                        label: 'Name',
-                        controller: name,
-                        maxLength: 64,
-                        onSubmitted: (value) {
-                          if (selectedProject != null) {
-                            widget.controller.createRequest(name: name.text, project: selectedProject!);
-                            Navigator.of(context).pop();
-                          }
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      Select(
-                        label: 'Project',
-                        items: menuItems,
-                        onChanged: (value) => setState(() {
-                          selectedProject = value;
-                        }),
-                        value: selectedProject,
-                      ),
-                      const SizedBox(height: 40),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        spacing: 6,
+                  return Container(
+                    height: 340,
+                    width: MediaQuery.of(context).size.width * 0.4,
+                    padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
+                    child: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          CancelButton(onPressed: Navigator.of(context).pop),
-                          FilledButton(
-                            onPressed: selectedProject != null
-                                ? () {
-                                    widget.controller.createRequest(name: name.text, project: selectedProject!);
-                                    Navigator.of(context).pop();
-                                  }
-                                : null,
-                            child: Text('Create'),
+                          Text(
+                            'New Request',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
+                          ),
+                          const SizedBox(height: 15),
+                          Input(
+                            label: 'Name',
+                            controller: name,
+                            maxLength: 64,
+                            autofocus: true,
+                            onSubmitted: (value) {
+                              if (selectedProject != null) {
+                                widget.controller.createRequest(name: name.text, project: selectedProject!).then((res) {
+                                  if (res && context.mounted) Navigator.of(context).pop();
+                                });
+                              }
+                            },
+                          ),
+                          Select(
+                            label: 'Project',
+                            items: menuItems,
+                            onChanged: (value) => setState(() {
+                              selectedProject = value;
+                            }),
+                            value: selectedProject,
+                          ),
+                          if (snapshot.data!.isEmpty)
+                            Text(
+                              'You must create a project first',
+                              style: TextStyle(color: const Color.fromARGB(195, 241, 95, 85)),
+                            ),
+                          const SizedBox(height: 40),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            spacing: 6,
+                            children: [
+                              CancelButton(onPressed: Navigator.of(context).pop),
+                              FilledButton(
+                                onPressed: selectedProject != null
+                                    ? () {
+                                        widget.controller.createRequest(name: name.text, project: selectedProject!).then((res) {
+                                          if (res && context.mounted) Navigator.of(context).pop();
+                                        });
+                                      }
+                                    : null,
+                                child: Text('Create'),
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                ),
-              );
-            },
+                    ),
+                  );
+                } else {
+                  return Container();
+                }
+              },
+            ),
           ),
         );
       },
@@ -160,48 +178,56 @@ class _SideMenuState extends State<SideMenu> {
 
   void newProjectDialog() {
     var name = TextEditingController();
+    int length = 0;
 
     showDialog(
       context: context,
       builder: (context) {
         return Dialog(
-          child: Container(
-            height: 240,
-            width: MediaQuery.of(context).size.width * 0.4,
-            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'New Project',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
-                ),
-                const SizedBox(height: 15),
-                Input(
-                  label: 'Name',
-                  controller: name,
-                  autofocus: true,
-                  onSubmitted: (value) {
-                    widget.controller.createProject(name: name.text);
-                    Navigator.of(context).pop();
-                  },
-                ),
-                const SizedBox(height: 40),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  spacing: 6,
-                  children: [
-                    CancelButton(onPressed: Navigator.of(context).pop),
-                    FilledButton(
-                      onPressed: () {
-                        widget.controller.createProject(name: name.text);
-                        Navigator.of(context).pop();
-                      },
-                      child: Text('Create'),
-                    ),
-                  ],
-                ),
-              ],
+          child: StatefulBuilder(
+            builder: (context, setState) => Container(
+              height: 240,
+              width: MediaQuery.of(context).size.width * 0.4,
+              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'New Project',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
+                  ),
+                  const SizedBox(height: 15),
+                  Input(
+                    label: 'Name',
+                    controller: name,
+                    autofocus: true,
+                    onChanged: (value) => setState(() {
+                      length = value.length;
+                    }),
+                    onSubmitted: (value) {
+                      widget.controller.createProject(name: name.text);
+                      Navigator.of(context).pop();
+                    },
+                  ),
+                  const SizedBox(height: 40),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    spacing: 6,
+                    children: [
+                      CancelButton(onPressed: Navigator.of(context).pop),
+                      FilledButton(
+                        onPressed: length > 0
+                            ? () {
+                                widget.controller.createProject(name: name.text);
+                                Navigator.of(context).pop();
+                              }
+                            : null,
+                        child: Text('Create'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -358,8 +384,12 @@ class _SideMenuState extends State<SideMenu> {
                             padding: const EdgeInsets.symmetric(horizontal: 6),
                             child: TextField(
                               controller: projectName,
+                              autofocus: true,
                               style: TextStyle(fontSize: 14),
-                              onSubmitted: (value) => widget.controller.saveProject(projectData.project, name: value),
+                              onSubmitted: (value) => widget.controller.saveProject(
+                                projectData.project,
+                                name: value,
+                              ),
                             ),
                           );
                         }

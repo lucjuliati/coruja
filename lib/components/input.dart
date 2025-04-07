@@ -82,7 +82,7 @@ class ParamInput extends StatelessWidget {
     ThemeData theme = Theme.of(context);
 
     return Padding(
-      padding: padding!,
+      padding: EdgeInsets.zero,
       child: TextField(
         controller: controller,
         autofocus: autofocus,
@@ -97,15 +97,16 @@ class ParamInput extends StatelessWidget {
           fontWeight: FontWeight.w300,
         ),
         decoration: InputDecoration(
+          fillColor: Colors.transparent,
           contentPadding: const EdgeInsets.only(bottom: 4, right: 6, left: 6),
-          constraints: BoxConstraints(maxHeight: 32),
+          constraints: BoxConstraints(maxHeight: 30),
+          focusColor: Colors.red,
+          filled: true,
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(2),
-            borderSide: BorderSide(color: theme.dividerColor, width: 1.5),
+            borderSide: BorderSide(color: Colors.transparent, width: 1.5),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(2),
-            borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.5),
+            borderSide: BorderSide(color: Colors.transparent, width: 1.5),
           ),
         ),
       ),

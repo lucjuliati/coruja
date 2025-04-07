@@ -88,19 +88,6 @@ class _RequestInterfaceState extends State<RequestInterface> {
     widget.controller.removeListener(requestListener);
   }
 
-  void _handleKeyEvent(KeyEvent event) {
-    if (event is KeyDownEvent) {
-      bool isControlPressed = event.logicalKey == LogicalKeyboardKey.controlLeft ||
-          event.logicalKey == LogicalKeyboardKey.controlRight ||
-          HardwareKeyboard.instance.logicalKeysPressed.contains(LogicalKeyboardKey.controlLeft) ||
-          HardwareKeyboard.instance.logicalKeysPressed.contains(LogicalKeyboardKey.controlRight);
-
-      if (isControlPressed && event.logicalKey == LogicalKeyboardKey.keyS) {
-        save();
-      }
-    }
-  }
-
   void save() {
     widget.controller.saveRequest(
       name: widget.controller.name.text,
@@ -140,182 +127,187 @@ class _RequestInterfaceState extends State<RequestInterface> {
     }
 
     return Expanded(
-      child: KeyboardListener(
-        focusNode: keyboardFocus,
-        onKeyEvent: _handleKeyEvent,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: Container(
-            width: MediaQuery.of(context).size.width,
-            margin: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-            decoration: BoxDecoration(color: theme.cardColor, borderRadius: BorderRadius.circular(4)),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    spacing: 8,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          SizedBox(
-                            width: 380,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                SizedBox(
-                                  width: MediaQuery.of(context).size.width,
-                                  child: TextField(
-                                    controller: widget.controller.name,
-                                    cursorRadius: Radius.circular(12),
-                                    style: TextStyle(fontSize: 13),
-                                    onSubmitted: (value) => save(),
-                                    decoration: InputDecoration(
-                                      contentPadding: const EdgeInsets.only(bottom: 4),
-                                      constraints: BoxConstraints(maxHeight: 36),
-                                      enabledBorder: UnderlineInputBorder(
-                                        borderSide: BorderSide(color: theme.dividerColor, width: 1.5),
+      child: CallbackShortcuts(
+        bindings: <ShortcutActivator, VoidCallback>{
+          const SingleActivator(LogicalKeyboardKey.keyS, control: true): save,
+          const SingleActivator(LogicalKeyboardKey.keyQ, control: true): widget.controller.close,
+        },
+        child: Focus(
+          autofocus: true,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: Container(
+              width: MediaQuery.of(context).size.width,
+              margin: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+              decoration: BoxDecoration(color: theme.cardColor, borderRadius: BorderRadius.circular(4)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      spacing: 8,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SizedBox(
+                              width: 380,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  SizedBox(
+                                    width: MediaQuery.of(context).size.width,
+                                    child: TextField(
+                                      controller: widget.controller.name,
+                                      cursorRadius: Radius.circular(12),
+                                      style: TextStyle(fontSize: 13),
+                                      onSubmitted: (value) => save(),
+                                      decoration: InputDecoration(
+                                        contentPadding: const EdgeInsets.only(bottom: 4),
+                                        constraints: BoxConstraints(maxHeight: 36),
+                                        enabledBorder: UnderlineInputBorder(
+                                          borderSide: BorderSide(color: theme.dividerColor, width: 1.5),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: save,
+                              style: FilledButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 10),
+                              ),
+                              child: Opacity(
+                                opacity: 0.75,
+                                child: Row(
+                                  spacing: 7,
+                                  children: [
+                                    FaIcon(FontAwesomeIcons.floppyDisk, size: 18, color: Colors.white),
+                                    Text('Save', style: TextStyle(color: Colors.white)),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        Row(
+                          spacing: 8,
+                          children: [
+                            SizedBox(
+                              width: 115,
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(4),
+                                child: Material(
+                                  color: Colors.transparent,
+                                  shape: RoundedRectangleBorder(
+                                    side: BorderSide(color: theme.dividerColor, width: 1.5),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: PopupMenuButton<MethodLabel>(
+                                    tooltip: null,
+                                    initialValue: MethodLabel.get,
+                                    color: theme.inputDecorationTheme.fillColor,
+                                    padding: const EdgeInsets.symmetric(vertical: 0),
+                                    shape: RoundedRectangleBorder(side: BorderSide(color: theme.dividerColor)),
+                                    itemBuilder: (BuildContext context) => MethodLabel.entries,
+                                    onSelected: (MethodLabel item) {
+                                      widget.controller.saveRequest(method: item.label);
+                                      setState(() {
+                                        selectedMethod = item;
+                                      });
+                                    },
+                                    child: Padding(
+                                      padding: const EdgeInsets.only(top: 6, bottom: 6, left: 10, right: 14),
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Opacity(opacity: 0.7, child: Icon(Icons.arrow_drop_down)),
+                                          Text(
+                                            selectedMethod?.label ?? '---',
+                                            textAlign: TextAlign.right,
+                                            style: TextStyle(
+                                              color: selectedMethod?.color,
+                                              fontWeight: FontWeight.w500,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ),
                                 ),
-                              ],
+                              ),
                             ),
-                          ),
-                          TextButton(
-                            onPressed: save,
-                            style: FilledButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 10),
+                            Expanded(
+                              child: TextField(
+                                controller: widget.controller.url,
+                                focusNode: urlFocus,
+                                onChanged: (value) => widget.controller.findParams(),
+                                decoration: InputDecoration(
+                                  alignLabelWithHint: false,
+                                  border: InputBorder.none,
+                                  constraints: BoxConstraints(maxHeight: 36),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderSide: BorderSide(color: theme.dividerColor, width: 1.5),
+                                  ),
+                                  contentPadding: const EdgeInsets.only(left: 8, right: 8),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderSide: BorderSide(
+                                      color: theme.colorScheme.primary,
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                  hintText: 'https://example.com',
+                                  hintStyle: TextStyle(
+                                    color: theme.textTheme.bodyMedium!.color!.withValues(alpha: 0.45),
+                                    fontSize: 13,
+                                  ),
+                                ),
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: theme.textTheme.bodyMedium!.color!.withValues(alpha: 0.85),
+                                ),
+                                onSubmitted: (String value) {
+                                  send();
+                                  widget.controller.url.text = value;
+                                  urlFocus.requestFocus();
+                                },
+                              ),
                             ),
-                            child: Opacity(
-                              opacity: 0.75,
+                            TextButton(
+                              onPressed: send,
+                              style: TextButton.styleFrom(
+                                backgroundColor: theme.primaryColor,
+                                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 18),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                              ),
                               child: Row(
-                                spacing: 7,
+                                spacing: 6,
                                 children: [
-                                  FaIcon(FontAwesomeIcons.floppyDisk, size: 18, color: Colors.white),
-                                  Text('Save', style: TextStyle(color: Colors.white)),
+                                  Text('Send', style: TextStyle(color: Colors.white)),
+                                  Icon(
+                                    CupertinoIcons.arrow_right,
+                                    color: Colors.white,
+                                  ),
                                 ],
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                      Row(
-                        spacing: 8,
-                        children: [
-                          SizedBox(
-                            width: 115,
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(4),
-                              child: Material(
-                                color: Colors.transparent,
-                                shape: RoundedRectangleBorder(
-                                  side: BorderSide(color: theme.dividerColor, width: 1.5),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: PopupMenuButton<MethodLabel>(
-                                  tooltip: null,
-                                  initialValue: MethodLabel.get,
-                                  color: theme.inputDecorationTheme.fillColor,
-                                  padding: const EdgeInsets.symmetric(vertical: 0),
-                                  shape: RoundedRectangleBorder(side: BorderSide(color: theme.dividerColor)),
-                                  itemBuilder: (BuildContext context) => MethodLabel.entries,
-                                  onSelected: (MethodLabel item) {
-                                    widget.controller.saveRequest(method: item.label);
-                                    setState(() {
-                                      selectedMethod = item;
-                                    });
-                                  },
-                                  child: Padding(
-                                    padding: const EdgeInsets.only(top: 6, bottom: 6, left: 10, right: 14),
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Opacity(opacity: 0.7, child: Icon(Icons.arrow_drop_down)),
-                                        Text(
-                                          selectedMethod?.label ?? '---',
-                                          textAlign: TextAlign.right,
-                                          style: TextStyle(
-                                            color: selectedMethod?.color,
-                                            fontWeight: FontWeight.w500,
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: TextField(
-                              controller: widget.controller.url,
-                              focusNode: urlFocus,
-                              onChanged: (value) => widget.controller.findParams(),
-                              decoration: InputDecoration(
-                                alignLabelWithHint: false,
-                                border: InputBorder.none,
-                                constraints: BoxConstraints(maxHeight: 36),
-                                enabledBorder: OutlineInputBorder(
-                                  borderSide: BorderSide(color: theme.dividerColor, width: 1.5),
-                                ),
-                                contentPadding: const EdgeInsets.only(left: 8, right: 8),
-                                focusedBorder: OutlineInputBorder(
-                                  borderSide: BorderSide(
-                                    color: theme.colorScheme.primary,
-                                    width: 1.5,
-                                  ),
-                                ),
-                                hintText: 'https://example.com',
-                                hintStyle: TextStyle(
-                                  color: theme.textTheme.bodyMedium!.color!.withValues(alpha: 0.45),
-                                  fontSize: 13,
-                                ),
-                              ),
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: theme.textTheme.bodyMedium!.color!.withValues(alpha: 0.85),
-                              ),
-                              onSubmitted: (String value) {
-                                send();
-                                widget.controller.url.text = value;
-                                urlFocus.requestFocus();
-                              },
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: send,
-                            style: TextButton.styleFrom(
-                              backgroundColor: theme.primaryColor,
-                              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 18),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                            ),
-                            child: Row(
-                              spacing: 6,
-                              children: [
-                                Text('Send', style: TextStyle(color: Colors.white)),
-                                Icon(
-                                  CupertinoIcons.arrow_right,
-                                  color: Colors.white,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                ExtraTabs(controller: widget.controller),
-                ResponseBody(controller: widget.controller),
-              ],
+                  ExtraTabs(controller: widget.controller),
+                  ResponseBody(controller: widget.controller),
+                ],
+              ),
             ),
           ),
         ),

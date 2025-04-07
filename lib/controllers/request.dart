@@ -33,6 +33,7 @@ class RequestController extends ChangeNotifier {
   List<Project> projects = [];
   List<Request> requests = [];
   bool loading = false;
+  bool hiddenHeaders = true;
   var projectData = <int, ProjectData>{};
   ResponseData? responseData;
   int tabIndex = 0;
@@ -81,6 +82,11 @@ class RequestController extends ChangeNotifier {
     } else {
       url.text = newUri.toString();
     }
+  }
+
+  void toggleHeaderVisibility() {
+    hiddenHeaders = !hiddenHeaders;
+    notifyListeners();
   }
 
   void setProjectExpanded(int id) {
@@ -242,6 +248,7 @@ class RequestController extends ChangeNotifier {
     ResponseData? data;
     final stopwatch = Stopwatch();
     var headers = paramsManager?.headers.where((h) => h.enabled).map((h) => h.toMap()).toList();
+    responseData = null;
 
     notifyListeners();
 
@@ -311,22 +318,25 @@ class RequestController extends ChangeNotifier {
           }
         }
 
-        data!.widget = Container(
-          color: Colors.transparent,
-          child: InAppWebView(
-            onLoadStop: (controller, url) async {
-              if (!data!.isJson) return;
-              String fileContents = await rootBundle.loadString('lib/assets/jsonViewer.js');
+        data!.widget = ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: Container(
+            color: Colors.transparent,
+            child: InAppWebView(
+              onLoadStop: (controller, url) async {
+                if (!data!.isJson) return;
+                String fileContents = await rootBundle.loadString('lib/assets/jsonViewer.js');
 
-              controller.evaluateJavascript(
-                source: 'let jsonData = $body; $fileContents',
-              );
-            },
-            initialSettings: InAppWebViewSettings(
-              allowsBackForwardNavigationGestures: false,
-              javaScriptEnabled: true,
+                controller.evaluateJavascript(
+                  source: 'let jsonData = $body; $fileContents',
+                );
+              },
+              initialSettings: InAppWebViewSettings(
+                allowsBackForwardNavigationGestures: false,
+                javaScriptEnabled: true,
+              ),
+              initialData: InAppWebViewInitialData(data: initialData),
             ),
-            initialData: InAppWebViewInitialData(data: initialData),
           ),
         );
 
@@ -349,5 +359,11 @@ class RequestController extends ChangeNotifier {
       httpClient.close();
       notifyListeners();
     }
+  }
+
+  close() {
+    selectedRequest = null;
+    responseData = null;
+    notifyListeners();
   }
 }

@@ -78,7 +78,7 @@ class _ExtraTabsState extends State<ExtraTabs> {
                 children: [
                   Row(children: items),
                   Padding(
-                    padding: const EdgeInsets.only(bottom: 60),
+                    padding: const EdgeInsets.only(bottom: 60, top: 8),
                     child: children[widget.controller.tabIndex],
                   ),
                 ],
@@ -106,7 +106,8 @@ class ParamTab extends StatelessWidget {
         List<TableRow> rows = [];
         TextStyle headerStyle = TextStyle(
           fontSize: 13,
-          color: theme.textTheme.bodyMedium!.color!.withValues(alpha: 0.75),
+          fontWeight: FontWeight.w500,
+          color: theme.textTheme.bodyMedium!.color!.withValues(alpha: 0.6),
         );
 
         for (final (index, param) in paramsManager!.params.indexed) {
@@ -130,9 +131,15 @@ class ParamTab extends StatelessWidget {
                   controller: param.value,
                   onChanged: (String value) => controller.changeParam(),
                 ),
-                IconButton(
-                  onPressed: () => paramsManager.deleteResource('params', index),
-                  icon: FaIcon(FontAwesomeIcons.trash, size: 16),
+                InkWell(
+                  onTap: () => paramsManager.deleteResource('params', index),
+                  child: Center(
+                    child: FaIcon(
+                      FontAwesomeIcons.trash,
+                      size: 14,
+                      color: theme.textTheme.bodyMedium!.color!.withValues(alpha: 0.75),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -141,28 +148,47 @@ class ParamTab extends StatelessWidget {
 
         return Container(
           constraints: BoxConstraints(minHeight: 140),
-          child: Table(
-            border: TableBorder.all(color: Colors.transparent),
-            columnWidths: const <int, TableColumnWidth>{
-              0: IntrinsicColumnWidth(),
-              1: FlexColumnWidth(),
-              2: FlexColumnWidth(),
-              3: IntrinsicColumnWidth(),
-            },
-            defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              TableRow(
+              Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Opacity(opacity: 0.7, child: Text('Params')),
+              ),
+              Table(
+                border: TableBorder.all(
+                  color: theme.dividerColor,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                columnWidths: const <int, TableColumnWidth>{
+                  0: IntrinsicColumnWidth(),
+                  1: FlexColumnWidth(),
+                  2: FlexColumnWidth(),
+                  3: IntrinsicColumnWidth(),
+                },
+                defaultVerticalAlignment: TableCellVerticalAlignment.middle,
                 children: [
-                  Container(),
-                  Text('Key', style: headerStyle),
-                  Text('Value', style: headerStyle),
-                  IconButton(
-                    onPressed: () => paramsManager.addResource('params'),
-                    icon: Icon(Icons.add),
+                  TableRow(
+                    children: [
+                      Container(),
+                      Padding(padding: const EdgeInsets.only(left: 6), child: Text('Key', style: headerStyle)),
+                      Padding(padding: const EdgeInsets.only(left: 6), child: Text('Value', style: headerStyle)),
+                      InkWell(
+                        onTap: () => paramsManager.addResource('params'),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
+                          child: Icon(
+                            Icons.add,
+                            size: 20,
+                            color: theme.textTheme.bodyMedium!.color!.withValues(alpha: 0.75),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
+                  ...rows,
                 ],
               ),
-              ...rows,
             ],
           ),
         );
@@ -186,10 +212,13 @@ class HeadersTab extends StatelessWidget {
         List<TableRow> rows = [];
         TextStyle headerStyle = TextStyle(
           fontSize: 13,
-          color: theme.textTheme.bodyMedium!.color!.withValues(alpha: 0.75),
+          fontWeight: FontWeight.w500,
+          color: theme.textTheme.bodyMedium!.color!.withValues(alpha: 0.6),
         );
 
         for (final (index, header) in paramsManager!.headers.indexed) {
+          if (controller.hiddenHeaders && header.hidden) continue;
+
           rows.add(
             TableRow(
               children: [
@@ -208,9 +237,15 @@ class HeadersTab extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 4),
                   controller: header.value,
                 ),
-                IconButton(
-                  onPressed: () => paramsManager.deleteResource('headers', index),
-                  icon: FaIcon(FontAwesomeIcons.trash, size: 16),
+                InkWell(
+                  onTap: () => paramsManager.deleteResource('headers', index),
+                  child: Center(
+                    child: FaIcon(
+                      FontAwesomeIcons.trash,
+                      size: 14,
+                      color: theme.textTheme.bodyMedium!.color!.withValues(alpha: 0.75),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -219,28 +254,64 @@ class HeadersTab extends StatelessWidget {
 
         return Container(
           constraints: BoxConstraints(minHeight: 140),
-          child: Table(
-            border: TableBorder.all(color: Colors.transparent),
-            columnWidths: const <int, TableColumnWidth>{
-              0: IntrinsicColumnWidth(),
-              1: FlexColumnWidth(),
-              2: FlexColumnWidth(),
-              3: IntrinsicColumnWidth(),
-            },
-            defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              TableRow(
+              Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Row(
+                  children: [
+                    Opacity(opacity: 0.7, child: Text('Headers')),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 16),
+                      child: InkWell(
+                        onTap: controller.toggleHeaderVisibility,
+                        child: Text(
+                          controller.hiddenHeaders ? 'Show hidden headers' : 'Hide headers',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w500,
+                            color: const Color.fromARGB(255, 90, 165, 226),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Table(
+                border: TableBorder.all(
+                  color: theme.dividerColor,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                columnWidths: const <int, TableColumnWidth>{
+                  0: IntrinsicColumnWidth(),
+                  1: FlexColumnWidth(),
+                  2: FlexColumnWidth(),
+                  3: IntrinsicColumnWidth(),
+                },
+                defaultVerticalAlignment: TableCellVerticalAlignment.middle,
                 children: [
-                  Container(),
-                  Text('Key', style: headerStyle),
-                  Text('Value', style: headerStyle),
-                  IconButton(
-                    onPressed: () => paramsManager.addResource('headers'),
-                    icon: Icon(Icons.add),
+                  TableRow(
+                    children: [
+                      Container(),
+                      Padding(padding: const EdgeInsets.only(left: 6), child: Text('Key', style: headerStyle)),
+                      Padding(padding: const EdgeInsets.only(left: 6), child: Text('Value', style: headerStyle)),
+                      InkWell(
+                        onTap: () => paramsManager.addResource('headers'),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
+                          child: Icon(
+                            Icons.add,
+                            size: 20,
+                            color: theme.textTheme.bodyMedium!.color!.withValues(alpha: 0.75),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
+                  ...rows,
                 ],
               ),
-              ...rows,
             ],
           ),
         );

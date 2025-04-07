@@ -16,6 +16,7 @@ class ParamsManager {
       key: TextEditingController(),
       value: TextEditingController(),
       enabled: true,
+      hidden: false,
     ),
   ];
 
@@ -24,16 +25,19 @@ class ParamsManager {
       key: TextEditingController(text: 'Cache-Control'),
       value: TextEditingController(text: 'no-cache'),
       enabled: true,
+      hidden: true,
     ),
     QueryParam(
       key: TextEditingController(text: 'Accept'),
       value: TextEditingController(text: '*/*'),
       enabled: true,
+      hidden: true,
     ),
     QueryParam(
       key: TextEditingController(text: 'Connection'),
       value: TextEditingController(text: 'keep-alive'),
       enabled: true,
+      hidden: true,
     ),
   ];
 
@@ -56,6 +60,7 @@ class ParamsManager {
           key: TextEditingController(text: header['key'] ?? ''),
           value: TextEditingController(text: header['value'] ?? ''),
           enabled: header['enabled'] ?? true,
+          hidden: header['hidden'] ?? true,
         ),
       );
     }
@@ -79,6 +84,7 @@ class ParamsManager {
           key: TextEditingController(text: param.key),
           value: TextEditingController(text: param.value),
           enabled: true,
+          hidden: false,
         ),
       );
     }
@@ -112,6 +118,7 @@ class ParamsManager {
     var newItem = QueryParam(
       key: TextEditingController(),
       value: TextEditingController(),
+      hidden: false,
       enabled: true,
     );
 

@@ -43,7 +43,7 @@ class AppMenu extends StatelessWidget {
         border: Border(
           bottom: BorderSide(color: theme.dividerColor, width: 1.5),
         ),
-        color: theme.cardColor
+        color: theme.cardColor,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

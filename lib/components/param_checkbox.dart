@@ -17,10 +17,11 @@ class ParamCheckbox extends StatelessWidget {
     Color? iconColor = value ? Colors.white : Colors.transparent;
 
     return AnimatedContainer(
-      width: 22,
-      height: 22,
+      width: 21,
+      height: 21,
       duration: const Duration(milliseconds: 300),
       curve: Curves.fastOutSlowIn,
+      margin: const EdgeInsets.only(left: 8),
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(4),

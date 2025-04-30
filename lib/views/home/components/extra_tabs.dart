@@ -22,9 +22,9 @@ class _ExtraTabsState extends State<ExtraTabs> {
 
   @override
   Widget build(BuildContext context) {
+    final List<String> labels = ['Params', 'Headers', 'Body'];
     ThemeData theme = Theme.of(context);
     List<Widget> items = [];
-    List<String> labels = ['Params', 'Headers', 'Body'];
 
     List<Widget> children = [
       ParamTab(controller: widget.controller),
